@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Dot-Connector AI</title>
+<style>
+  :root {
+    --ground: #12161F;
+    --surface: #1A2130;
+    --surface2: #202940;
+    --ink: #E9E4D8;
+    --ink-soft: #ADB2C0;
+    --ink-faint: #6B7285;
+    --line: #2A3245;
+    --amber: #E8A33D;
+    --amber-bright: #F0B34A;
+    --amber-glow: rgba(240, 179, 74, 0.14);
+    --dot-a: #7C8CAD;
+    --dot-b: #A6946F;
+    --danger: #C96A5B;
+    --ok: #7FA67F;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Leelawadee UI", "Noto Sans Thai", "Segoe UI", sans-serif;
+    line-height: 1.75;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: "Cascadia Code", Consolas, monospace;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .col { max-width: 60rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding: 2.2rem 0 1.8rem;
+    text-align: center;
+  }
+  header .mono { color: var(--amber); }
+  header h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800; margin-top: 0.35rem; }
+  header p { color: var(--ink-soft); font-size: 0.95rem; max-width: 36rem; margin: 0.4rem auto 0; }
+
+  section { padding: 2.2rem 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .layer-head { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+  .layer-head .mono { color: var(--amber); }
+  .layer-head h2 { font-size: 1.15rem; font-weight: 800; }
+  .layer-head .hint { color: var(--ink-faint); font-size: 0.85rem; margin-left: auto; }
+
+  /* ---- Serendipity banner ---- */
+  #serendipity {
+    display: none;
+    background: linear-gradient(90deg, var(--amber-glow), transparent);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    margin: 1.4rem auto 0;
+    max-width: 60rem;
+  }
+  #serendipity.on { display: block; }
+  #serendipity .mono { color: var(--amber); }
+  #serendipity p { font-size: 0.9rem; color: var(--ink-soft); margin: 0.2rem 0 0.6rem; }
+  .forgotten-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .forgotten-chip {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 99px; padding: 0.25rem 0.4rem 0.25rem 0.9rem;
+    font-size: 0.85rem;
+  }
+  .forgotten-chip button {
+    background: var(--amber); color: #1A1408; border: none; border-radius: 99px;
+    font-family: inherit; font-weight: 700; font-size: 0.78rem;
+    padding: 0.15rem 0.7rem; cursor: pointer;
+  }
+  .forgotten-chip button:hover { background: var(--amber-bright); }
+
+  /* ---- dots grid (HexKern: asymmetric attention) ---- */
+  .dots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.8rem; }
+  .dot-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.9rem 1rem;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .dot-card:hover { border-color: var(--ink-faint); }
+  .dot-card.selected { border-color: var(--amber); background: var(--amber-glow); }
+  /* HexKern: never-connected dots get "wide kerning" — extra visual breathing room */
+  .dot-card.rare { box-shadow: 0 0 18px var(--amber-glow); border-color: rgba(240,179,74,0.4); }
+  .dot-card.dormant { opacity: 0.85; }
+  .dot-card .domain {
+    display: inline-block;
+    font-size: 0.72rem; font-weight: 700;
+    padding: 0.05rem 0.55rem; border-radius: 99px;
+    margin-bottom: 0.35rem; border: 1px solid;
+  }
+  .dot-card h3 { font-size: 0.98rem; font-weight: 700; }
+  .dot-card p { font-size: 0.82rem; color: var(--ink-soft); margin-top: 0.25rem;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .dot-stats { font-size: 0.72rem; color: var(--ink-faint); margin-top: 0.45rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .dot-stats .rare-badge { color: var(--amber-bright); font-weight: 700; }
+  .dot-stats .dormant-badge { color: var(--danger); font-weight: 700; }
+  .dot-card .del {
+    position: absolute; top: 0.45rem; right: 0.6rem;
+    background: none; border: none; color: var(--ink-faint);
+    font-size: 0.95rem; cursor: pointer; line-height: 1;
+  }
+  .dot-card .del:hover { color: var(--danger); }
+
+  /* ---- add form ---- */
+  details.add-dot { margin-top: 1.1rem; }
+  details.add-dot summary { cursor: pointer; color: var(--amber); font-weight: 700; font-size: 0.92rem; list-style: none; }
+  details.add-dot summary::before { content: "+ "; }
+  .add-form { display: grid; gap: 0.6rem; margin-top: 0.9rem; max-width: 34rem; }
+  .add-form input, .add-form textarea, .focus-input {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 5px;
+    color: var(--ink); font-family: inherit; font-size: 0.92rem;
+    padding: 0.55rem 0.8rem; width: 100%;
+  }
+  .add-form input:focus, .add-form textarea:focus, .focus-input:focus { outline: none; border-color: var(--amber); }
+  .add-form textarea { min-height: 4.5rem; resize: vertical; }
+  .btn {
+    background: var(--amber); color: #1A1408; border: none; border-radius: 6px;
+    font-family: inherit; font-weight: 800; font-size: 0.95rem;
+    padding: 0.6rem 1.4rem; cursor: pointer; transition: background 0.15s;
+  }
+  .btn:hover { background: var(--amber-bright); }
+  .btn:disabled { background: var(--ink-faint); cursor: not-allowed; }
+  .btn.small { font-size: 0.82rem; padding: 0.4rem 1rem; }
+  .btn.ghost { background: transparent; color: var(--amber); border: 1px solid var(--amber); }
+  .btn.ghost:hover { background: var(--amber-glow); }
+
+  /* ---- connect zone ---- */
+  .connect-zone { text-align: center; }
+  .connect-zone .focus-wrap { max-width: 34rem; margin: 0 auto 1rem; text-align: left; }
+  .connect-zone .focus-wrap label { font-size: 0.85rem; color: var(--ink-soft); }
+  .btn.big { font-size: 1.1rem; padding: 0.85rem 2.4rem; box-shadow: 0 0 24px var(--amber-glow); }
+  .sel-note { color: var(--ink-faint); font-size: 0.82rem; margin-top: 0.6rem; }
+
+  #processing { display: none; margin-top: 1.4rem; }
+  #processing.on { display: block; }
+  .scanner { width: 220px; height: 60px; margin: 0 auto 0.6rem; position: relative; }
+  .scanner span {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--dot-a); animation: pulse 1.4s infinite ease-in-out;
+  }
+  .scanner span:nth-child(2n) { background: var(--dot-b); }
+  .scanner span:nth-child(1) { left: 10px;  top: 30px; animation-delay: 0s; }
+  .scanner span:nth-child(2) { left: 55px;  top: 8px;  animation-delay: 0.15s; }
+  .scanner span:nth-child(3) { left: 100px; top: 40px; animation-delay: 0.3s; }
+  .scanner span:nth-child(4) { left: 145px; top: 12px; animation-delay: 0.45s; }
+  .scanner span:nth-child(5) { left: 190px; top: 32px; animation-delay: 0.6s; }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.7); opacity: 1; box-shadow: 0 0 12px var(--amber-glow); }
+  }
+  #processing p { color: var(--ink-soft); font-size: 0.9rem; }
+  #processing .stage { color: var(--amber); font-weight: 700; }
+
+  /* ---- results ---- */
+  .result-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 1.4rem 1.5rem; margin-bottom: 1.1rem;
+  }
+  .result-card.fresh { border-color: var(--amber); box-shadow: 0 0 30px var(--amber-glow); }
+  .result-card .when { color: var(--ink-faint); font-size: 0.75rem; }
+  .result-card h3 { color: var(--amber-bright); font-size: 1.25rem; font-weight: 800; margin: 0.2rem 0 0.6rem; }
+  .used-dots { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+  .used-dots span { font-size: 0.75rem; font-weight: 700; border: 1px solid; border-radius: 99px; padding: 0.05rem 0.6rem; }
+  .rc-row { margin-bottom: 0.65rem; }
+  .rc-row .mono { color: var(--ink-faint); display: block; margin-bottom: 0.1rem; }
+  .rc-row p { font-size: 0.92rem; color: var(--ink); }
+  .rc-row.first-step p { color: var(--amber-bright); font-weight: 600; }
+  .empty { color: var(--ink-faint); font-size: 0.9rem; }
+
+  /* ---- evidence ---- */
+  .evidence-zone { margin-top: 1rem; border-top: 1px dashed var(--line); padding-top: 0.9rem; }
+  .ev-loading { color: var(--ink-soft); font-size: 0.88rem; display: none; }
+  .ev-loading.on { display: block; }
+  .verdict {
+    display: inline-block; font-weight: 800; font-size: 0.88rem;
+    border-radius: 99px; padding: 0.15rem 0.9rem; margin-bottom: 0.6rem; border: 1px solid;
+  }
+  .verdict.world_first { color: var(--amber-bright); border-color: var(--amber-bright); background: var(--amber-glow); }
+  .verdict.similar_exists { color: var(--dot-a); border-color: var(--dot-a); }
+  .verdict.already_exists { color: var(--danger); border-color: var(--danger); }
+  .similar-list { font-size: 0.85rem; color: var(--ink-soft); margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
+  .feas-score { font-weight: 800; color: var(--ok); }
+  .proto-box { margin-top: 0.6rem; }
+  .proto-box summary { cursor: pointer; color: var(--amber); font-size: 0.88rem; font-weight: 700; }
+  .proto-box pre {
+    background: #0D1118; border: 1px solid var(--line); border-radius: 6px;
+    padding: 0.8rem 1rem; font-size: 0.75rem; overflow-x: auto; margin-top: 0.5rem;
+    max-height: 320px; overflow-y: auto; color: #C8D0E0;
+    font-family: "Cascadia Code", Consolas, monospace;
+  }
+  .proto-link { font-size: 0.85rem; }
+  .proto-link a { color: var(--amber-bright); }
+
+  .error-bar {
+    display: none;
+    background: rgba(201, 106, 91, 0.12); border: 1px solid var(--danger);
+    color: #E8B0A6; border-radius: 6px; padding: 0.6rem 1rem;
+    font-size: 0.88rem; margin-top: 1rem;
+  }
+  .error-bar.on { display: block; }
+
+  footer { border-top: 1px solid var(--line); text-align: center; padding: 1.6rem; color: var(--ink-faint); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mono">Connecting the Dots · At Scale · Self-Evolved v2</div>
+  <h1>🔗 The Dot-Connector AI</h1>
+  <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง</p>
+  <div id="serendipity" class="on">
+    <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
+      <span class="mono">Serendipity Engine · ทำงานเบื้องหลัง</span>
+      <span id="serStatus" style="font-size:0.8rem;color:var(--ink-faint)"></span>
+      <button class="btn small ghost" style="margin-left:auto" onclick="scanNow(this)">🔄 สแกน Inbox ตอนนี้</button>
+    </div>
+    <p id="serHint">โยนไฟล์ .txt/.md ลงโฟลเดอร์ <b>dot-connector\inbox\</b> — ระบบจะแปลงเป็นจุด เชื่อมเอง และเด้งแจ้งเตือนบน Windows โดยไม่ต้องเปิดหน้านี้</p>
+    <div class="forgotten-row" id="forgottenRow"></div>
+  </div>
+</header>
+
+<section>
+  <div class="col">
+    <div class="layer-head">
+      <span class="mono">Layer 01 · HexKern Memory</span>
+      <h2>คลังจุดความรู้ (Dot Repository)</h2>
+      <span class="hint">จุดเรืองแสง = จุดหายากที่ยังไม่เคยถูกเชื่อม · คลิกเพื่อเลือกเฉพาะบางจุด</span>
+    </div>
+    <div class="dots-grid" id="dotsGrid"></div>
+    <details class="add-dot">
+      <summary>เพิ่มจุดใหม่</summary>
+      <div class="add-form">
+        <input id="fTitle" placeholder="ชื่อจุด เช่น ทฤษฎีเกม, การย้อมคราม, บล็อกเชน">
+        <input id="fDomain" placeholder="โดเมน/สาขา เช่น ชีววิทยา, ศิลปะ, เศรษฐศาสตร์">
+        <textarea id="fContent" placeholder="รายละเอียด: จุดนี้คืออะไร มีหลักการ/โครงสร้างอย่างไร"></textarea>
+        <div><button class="btn" onclick="addDot()">บันทึกจุด</button></div>
+      </div>
+    </details>
+    <details class="add-dot">
+      <summary>โยนความคิดดิบ (AI แปลงเป็นจุดให้เอง)</summary>
+      <div class="add-form">
+        <textarea id="fCapture" placeholder="วางอะไรก็ได้ — โน้ตที่จดไว้, สรุปหนังสือที่เพิ่งอ่าน, ปัญหาที่เจอวันนี้ — The Collector จะสกัดเป็นจุดความรู้ให้เอง"></textarea>
+        <div><button class="btn" id="captureBtn" onclick="capture()">🌾 เก็บเกี่ยวเป็นจุด</button> <span id="captureNote" style="font-size:0.82rem;color:var(--ink-faint)"></span></div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col connect-zone">
+    <div class="layer-head" style="justify-content:center">
+      <span class="mono">Layer 02–03</span>
+      <h2>สแกนรูปแบบ &amp; ลากเส้นเชื่อม</h2>
+    </div>
+    <div class="focus-wrap">
+      <label for="focus">โจทย์หรือคอขวดที่อยากปลดล็อก (ไม่บังคับ)</label>
+      <input class="focus-input" id="focus" placeholder="เช่น อยากได้ไอเดียธุรกิจใหม่, อยากแก้ปัญหาลูกค้าเลิกใช้แอป">
+    </div>
+    <button class="btn big" id="connectBtn" onclick="connect()">⚡ เชื่อมจุด (Connect the Dots)</button>
+    <div class="sel-note" id="selNote"></div>
+    <div id="processing">
+      <div class="scanner"><span></span><span></span><span></span><span></span><span></span></div>
+      <p><span class="stage" id="stageText">กำลังสแกนจุดทั้งหมด…</span><br>ขั้นตอนนี้ใช้ AI คิดจริง (Fable 5) อาจใช้เวลา 1 – 4 นาที</p>
+    </div>
+    <div class="error-bar" id="errorBar"></div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="layer-head">
+      <span class="mono">Layer 04 · Eureka-to-Evidence</span>
+      <h2>นวัตกรรม + หลักฐาน</h2>
+      <span class="hint">กด "พิสูจน์ไอเดียนี้" เพื่อให้ AI ค้นเว็บเช็กความใหม่ระดับโลก + เขียนต้นแบบ</span>
+    </div>
+    <div id="results"><p class="empty">ยังไม่มีการเชื่อมจุด — กดปุ่ม "เชื่อมจุด" ด้านบนเพื่อสร้างนวัตกรรมชิ้นแรก</p></div>
+  </div>
+</section>
+
+<footer>The Dot-Connector AI v2 · Self-Evolved · ขับเคลื่อนด้วย Claude Fable 5 บนเครื่องของคุณ · ต้นแบบทั้งหมดอยู่ในโฟลเดอร์ lab/</footer>
+
+<script>
+const DOMAIN_COLORS = ["#7C8CAD","#A6946F","#8FA67F","#A67F8F","#6FA0A6","#A6836F","#9C7CAD","#7FA68C"];
+let dots = [];
+let selected = new Set();
+
+function domainColor(domain) {
+  let h = 0;
+  for (const ch of domain) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return DOMAIN_COLORS[h % DOMAIN_COLORS.length];
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+/* ---------- Layer 01 + HexKern ---------- */
+async function loadDots() {
+  dots = await (await fetch("/api/dots")).json();
+  const grid = document.getElementById("dotsGrid");
+  grid.innerHTML = dots.map(d => {
+    const c = domainColor(d.domain);
+    const cls = ["dot-card"];
+    if (selected.has(d.id)) cls.push("selected");
+    if (d.never_connected) cls.push("rare");
+    if (d.forgotten) cls.push("dormant");
+    const stats = [
+      d.never_connected
+        ? '<span class="rare-badge">✨ ยังไม่เคยถูกเชื่อม</span>'
+        : `เชื่อมแล้ว ${d.uses} ครั้ง`,
+      d.forgotten ? `<span class="dormant-badge">💤 ${d.days_idle} วัน</span>` : "",
+    ].filter(Boolean).join(" · ");
+    return `<div class="${cls.join(" ")}" onclick="toggleSel('${d.id}')">
+      <button class="del" title="ลบจุดนี้" onclick="event.stopPropagation(); delDot('${d.id}')">✕</button>
+      <span class="domain" style="color:${c};border-color:${c}">${esc(d.domain)}</span>
+      <h3>${esc(d.title)}</h3>
+      <p>${esc(d.content)}</p>
+      <div class="dot-stats">${stats}</div>
+    </div>`;
+  }).join("");
+  updateSelNote();
+  loadForgotten();
+}
+function toggleSel(id) {
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  loadDots();
+}
+function updateSelNote() {
+  const n = document.getElementById("selNote");
+  n.textContent = selected.size >= 2
+    ? `จะเชื่อมเฉพาะ ${selected.size} จุดที่เลือกไว้`
+    : selected.size === 1
+      ? "เลือกอย่างน้อย 2 จุด หรือยกเลิกการเลือกเพื่อใช้ทุกจุด"
+      : `จะสแกนจุดทั้งหมด ${dots.length} จุดในคลัง`;
+}
+async function addDot() {
+  const title = document.getElementById("fTitle").value.trim();
+  const domain = document.getElementById("fDomain").value.trim();
+  const content = document.getElementById("fContent").value.trim();
+  if (!title || !domain) return alert("กรอกชื่อจุดและโดเมนก่อน");
+  await fetch("/api/dots", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({title, domain, content}),
+  });
+  document.getElementById("fTitle").value = "";
+  document.getElementById("fDomain").value = "";
+  document.getElementById("fContent").value = "";
+  loadDots();
+}
+async function delDot(id) {
+  if (!confirm("ลบจุดนี้ออกจากคลัง?")) return;
+  await fetch("/api/dots/" + id, {method: "DELETE"});
+  selected.delete(id);
+  loadDots();
+}
+
+/* ---------- Serendipity ---------- */
+async function loadForgotten() {
+  const [forgotten, status] = await Promise.all([
+    (await fetch("/api/forgotten")).json(),
+    (await fetch("/api/serendipity/status")).json(),
+  ]);
+  const st = document.getElementById("serStatus");
+  const parts = [];
+  if (status.inbox_pending) parts.push(`📥 มี ${status.inbox_pending} ไฟล์รอเก็บเกี่ยว`);
+  parts.push(status.last_auto_run
+    ? `เชื่อมอัตโนมัติล่าสุด: ${new Date(status.last_auto_run).toLocaleString("th-TH")}`
+    : "ยังไม่เคยเชื่อมอัตโนมัติ");
+  parts.push(`ตรวจทุก ${status.check_interval_min} นาที`);
+  st.textContent = parts.join(" · ");
+  const row = document.getElementById("forgottenRow");
+  row.innerHTML = forgotten.map(d => {
+    const c = domainColor(d.domain);
+    return `<span class="forgotten-chip">
+      <span style="color:${c}">💤 ${esc(d.title)}</span>
+      <span style="color:var(--ink-faint);font-size:0.75rem">${d.days_idle} วัน</span>
+      <button onclick="reviveDot('${d.id}')">⚡ ปลุกจุดนี้</button>
+    </span>`;
+  }).join("");
+}
+async function scanNow(btn) {
+  btn.disabled = true;
+  btn.textContent = "⏳ กำลังสแกน…";
+  try {
+    const res = await fetch("/api/serendipity/scan", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({}),
+    });
+    const r = await res.json();
+    let msg = `เก็บเกี่ยวได้ ${r.harvested} จุดใหม่`;
+    if (r.connected) msg += ` · 💡 เชื่อมอัตโนมัติสำเร็จ: ${r.connection?.name}`;
+    if (r.error) msg += ` · ⚠ ${r.error}`;
+    alert(msg);
+    loadDots();
+    loadResults(r.connection?.id);
+  } catch (e) {
+    alert("⚠ " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔄 สแกน Inbox ตอนนี้";
+  }
+}
+async function capture() {
+  const t = document.getElementById("fCapture");
+  const note = document.getElementById("captureNote");
+  const btn = document.getElementById("captureBtn");
+  if (!t.value.trim()) return;
+  btn.disabled = true;
+  note.textContent = "The Collector กำลังสกัดจุด…";
+  try {
+    const res = await fetch("/api/capture", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text: t.value}),
+    });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || "เกิดข้อผิดพลาด");
+    note.textContent = r.created.length
+      ? `✅ ได้จุดใหม่ ${r.created.length} จุด: ${r.created.map(d => d.title).join(", ")}`
+      : "ไม่พบเนื้อหาที่เป็นจุดได้ ลองเขียนให้มี 'หลักการ' มากขึ้น";
+    if (r.created.length) t.value = "";
+    loadDots();
+  } catch (e) {
+    note.textContent = "⚠ " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+function reviveDot(id) {
+  connect({ mustInclude: [id] });
+}
+
+/* ---------- Layers 02-03 ---------- */
+const STAGES = [
+  "Layer 02: กำลังสแกนหาความสัมพันธ์ที่ซ่อนอยู่…",
+  "Layer 02: เปรียบเทียบโครงสร้างข้ามโดเมน…",
+  "Layer 03: กำลังลากเส้นเชื่อมจุดที่คาดไม่ถึง…",
+  "Layer 04: สังเคราะห์นวัตกรรมจากการผสมผสาน…",
+];
+let stageTimer = null;
+
+async function connect(opts = {}) {
+  const btn = document.getElementById("connectBtn");
+  const proc = document.getElementById("processing");
+  const err = document.getElementById("errorBar");
+  err.classList.remove("on");
+  btn.disabled = true;
+  proc.classList.add("on");
+
+  let i = 0;
+  document.getElementById("stageText").textContent = opts.mustInclude
+    ? "Serendipity: กำลังปลุกจุดที่ถูกลืมขึ้นมาเชื่อมใหม่…"
+    : STAGES[0];
+  stageTimer = setInterval(() => {
+    i = (i + 1) % STAGES.length;
+    document.getElementById("stageText").textContent = STAGES[i];
+  }, 12000);
+
+  try {
+    const body = {focus: document.getElementById("focus").value.trim()};
+    if (selected.size >= 2) body.dotIds = [...selected];
+    if (opts.mustInclude) body.mustInclude = opts.mustInclude;
+    const res = await fetch("/api/connect", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+    await loadResults(data.id);
+    loadDots();
+  } catch (e) {
+    err.textContent = "⚠ " + e.message;
+    err.classList.add("on");
+  } finally {
+    clearInterval(stageTimer);
+    btn.disabled = false;
+    proc.classList.remove("on");
+  }
+}
+
+/* ---------- Layer 04 + Evidence ---------- */
+function renderEvidence(c) {
+  if (!c.evidence) {
+    return `<div class="evidence-zone">
+      <button class="btn small ghost" onclick="runEvidence('${c.id}', this)">🧪 พิสูจน์ไอเดียนี้ (ค้นเว็บเช็กความใหม่ + สร้างต้นแบบ)</button>
+      <div class="ev-loading" id="evload-${c.id}">🔍 Evidence Agent กำลังค้นเว็บทั่วโลกและเขียนต้นแบบ… (3 – 8 นาที)</div>
+    </div>`;
+  }
+  const ev = c.evidence;
+  const verdictText = {
+    world_first: "🌍 ยังไม่พบใครในโลกทำสิ่งนี้",
+    similar_exists: "🔎 มีของใกล้เคียง แต่มุมนี้ยังใหม่",
+    already_exists: "⚠ มีคนทำแล้ว",
+  }[ev.novelty?.verdict] || ev.novelty?.verdict || "";
+  const similar = (ev.novelty?.similar_found || [])
+    .map(s => `<li><b>${esc(s.name)}</b> — ${esc(s.how_close)}</li>`).join("");
+  const proto = ev.prototype ? `
+    <div class="proto-link">📄 ต้นแบบถูกบันทึกเป็นไฟล์จริง: <a href="/${ev.prototype.path}" target="_blank">${esc(ev.prototype.path)}</a> — ${esc(ev.prototype.description)}</div>
+    <details class="proto-box"><summary>ดูโค้ดต้นแบบ</summary><pre>${esc(ev.prototype.code)}</pre></details>` : "";
+  return `<div class="evidence-zone">
+    <span class="verdict ${esc(ev.novelty?.verdict || "")}">${verdictText}</span>
+    ${similar ? `<ul class="similar-list">${similar}</ul>` : ""}
+    <div class="rc-row"><span class="mono">มุมที่ยังใหม่จริง</span><p>${esc(ev.novelty?.novel_angle)}</p></div>
+    <div class="rc-row"><span class="mono">Feasibility</span><p><span class="feas-score">${ev.feasibility?.score ?? "?"}/10</span> · ความเสี่ยงใหญ่สุด: ${esc(ev.feasibility?.biggest_risk)} · ทางแก้: ${esc(ev.feasibility?.mitigation)}</p></div>
+    <div class="rc-row"><span class="mono">การทดลองที่เล็กที่สุด</span><p>${esc(ev.experiment?.design)} · <b>เกณฑ์ผ่าน:</b> ${esc(ev.experiment?.success_metric)} · <b>ระยะเวลา:</b> ${esc(ev.experiment?.duration)}</p></div>
+    ${proto}
+  </div>`;
+}
+
+async function runEvidence(connId, btn) {
+  btn.disabled = true;
+  const load = document.getElementById("evload-" + connId);
+  if (load) load.classList.add("on");
+  try {
+    const res = await fetch("/api/evidence", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({connectionId: connId}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "เกิดข้อผิดพลาด");
+    await loadResults(connId);
+  } catch (e) {
+    alert("⚠ " + e.message);
+    btn.disabled = false;
+    if (load) load.classList.remove("on");
+  }
+}
+
+async function loadResults(freshId) {
+  const conns = await (await fetch("/api/connections")).json();
+  const el = document.getElementById("results");
+  if (!conns.length) return;
+  el.innerHTML = conns.map(c => {
+    const inv = c.innovation || {};
+    const dotsHtml = (c.selected_dots || []).map(d => {
+      const col = domainColor(d.domain);
+      return `<span style="color:${col};border-color:${col}">${esc(d.domain)} · ${esc(d.title)}</span>`;
+    }).join("");
+    return `<div class="result-card ${c.id === freshId ? "fresh" : ""}">
+      <div class="when">${new Date(c.created_at).toLocaleString("th-TH")}${c.focus ? " · โจทย์: " + esc(c.focus) : ""}${c.auto ? " · 🌠 เชื่อมอัตโนมัติโดย Serendipity Engine" : c.revived_dots?.length ? " · ⚡ Serendipity Revival" : ""}</div>
+      <h3>💡 ${esc(inv.name || "ไม่มีชื่อ")}</h3>
+      <div class="used-dots">${dotsHtml}</div>
+      <div class="rc-row"><span class="mono">Hidden Pattern</span><p>${esc(c.hidden_pattern)}</p></div>
+      <div class="rc-row"><span class="mono">Connection</span><p>${esc(c.connection)}</p></div>
+      <div class="rc-row"><span class="mono">Innovation</span><p>${esc(inv.description || "")}</p></div>
+      <div class="rc-row"><span class="mono">ทำไมถึงใหม่</span><p>${esc(inv.why_new || "")}</p></div>
+      <div class="rc-row first-step"><span class="mono">ก้าวแรก</span><p>→ ${esc(inv.first_step || "")}</p></div>
+      ${renderEvidence(c)}
+    </div>`;
+  }).join("");
+}
+
+loadDots();
+loadResults();
+</script>
+</body>
+</html>
