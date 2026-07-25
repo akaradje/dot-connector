@@ -424,88 +424,6 @@
   .ep-row .spacer { margin-left: auto; }
   .dep-line { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.25rem; }
 
-  /* ---- Layer 06.8: The Adoption Ledger — the engine's own return path ---- */
-  .adopt-bar {
-    display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber);
-    border-radius: 8px; padding: 0.8rem 1.1rem; margin-bottom: 0.8rem;
-    font-size: 0.85rem; color: var(--ink-soft);
-  }
-  .adopt-bar b { color: var(--ink); }
-  .adopt-bar .good { color: var(--ok); font-weight: 700; }
-  .adopt-bar .bad { color: var(--danger); font-weight: 700; }
-  .adopt-bar .wait { color: var(--ink-faint); font-weight: 700; }
-  .adopt-row {
-    display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
-    padding: 0.5rem 0.85rem; margin-bottom: 0.4rem; font-size: 0.83rem;
-  }
-  .adopt-row.adopted { border-left: 2px solid var(--ok); }
-  .adopt-row.unused { border-left: 2px solid var(--danger); background: linear-gradient(90deg, rgba(201,106,91,0.08), var(--surface) 60%); }
-  .adopt-row.pending { border-left: 2px solid var(--amber); }
-  .adopt-row.undeclared, .adopt-row.exempt, .adopt-row.unmeasurable { border-left: 2px solid var(--line); opacity: 0.68; }
-  .adopt-row code { font-family: "Cascadia Code", Consolas, monospace; font-size: 0.76rem; color: var(--ink); }
-  .adopt-row .spacer { margin-left: auto; }
-  .adopt-tag {
-    font-size: 0.7rem; font-weight: 700; border: 1px solid; border-radius: 99px; padding: 0.02rem 0.6rem;
-  }
-  .adopt-tag.adopted { color: var(--ok); border-color: var(--ok); }
-  .adopt-tag.unused { color: var(--danger); border-color: var(--danger); }
-  .adopt-tag.pending { color: var(--amber); border-color: var(--amber); }
-  .adopt-tag.undeclared, .adopt-tag.exempt, .adopt-tag.unmeasurable { color: var(--ink-faint); border-color: var(--line); }
-  .adopt-why { font-size: 0.78rem; color: var(--ink-faint); width: 100%; }
-  .rank-table { display: grid; gap: 0.25rem; margin-top: 0.5rem; }
-  .rank-row {
-    display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
-    font-size: 0.81rem; background: var(--surface2); border: 1px solid var(--line);
-    border-radius: 6px; padding: 0.3rem 0.75rem;
-  }
-  .rank-row.top { border-color: var(--amber-bright); }
-  .rank-row .down { color: var(--danger); font-weight: 700; }
-  .rank-row .up { color: var(--ok); font-weight: 700; }
-  .rank-row .flat { color: var(--ink-faint); }
-  .rank-row .spacer { margin-left: auto; }
-  .evo-card .adopt-line { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.4rem; }
-  .evo-card .adopt-line.unused { color: var(--danger); }
-  .evo-card .adopt-line.adopted { color: var(--ok); }
-
-  /* ---- Layer 06.9: The Self-Connector — the forge finally reads the repository ---- */
-  .know-bar {
-    display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--dot-a);
-    border-radius: 8px; padding: 0.8rem 1.1rem; margin-bottom: 0.8rem;
-    font-size: 0.85rem; color: var(--ink-soft);
-  }
-  .know-bar b { color: var(--ink); }
-  .know-bar .good { color: var(--ok); font-weight: 700; }
-  .know-bar .bad { color: var(--danger); font-weight: 700; }
-  .know-dot {
-    background: var(--surface); border: 1px solid var(--line); border-left: 2px solid var(--dot-a);
-    border-radius: 6px; padding: 0.55rem 0.85rem; margin-bottom: 0.45rem; font-size: 0.83rem;
-  }
-  .know-dot.helped { border-left-color: var(--ok); }
-  .know-dot.hurt { border-left-color: var(--danger); }
-  .know-dot .head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
-  .know-dot .head b { color: var(--ink); }
-  .know-dot .head .spacer { margin-left: auto; }
-  .know-dot .body { color: var(--ink-soft); margin-top: 0.25rem; }
-  .know-dot .why { font-size: 0.76rem; color: var(--ink-faint); margin-top: 0.2rem; }
-  .know-score { font-weight: 700; color: var(--ink-faint); }
-  .know-score.up { color: var(--ok); }
-  .know-score.down { color: var(--danger); }
-  .insight-box {
-    background: linear-gradient(90deg, var(--amber-glow), transparent);
-    border: 1px solid var(--amber); border-radius: 8px;
-    padding: 0.8rem 1rem; margin: 0.6rem 0; font-size: 0.85rem; color: var(--ink-soft);
-  }
-  .insight-box .mono { color: var(--amber); display: block; margin-bottom: 0.3rem; }
-  .insight-box b { color: var(--ink); }
-  .insight-box.none { background: none; border-color: var(--line); }
-  .result-card .forge-tag {
-    font-size: 0.72rem; font-weight: 700; border: 1px solid var(--dot-b); color: var(--dot-b);
-    border-radius: 99px; padding: 0.02rem 0.6rem;
-  }
-
   /* ---- Layer 08: The Distiller — the repository's second direction ---- */
   .distill-bar {
     display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
@@ -546,9 +464,9 @@
 <body>
 
 <header>
-  <div class="mono">Connecting the Dots · At Scale · Self-Forging v4 · The Scout · The Distiller · The Self-Connector · Opus 5</div>
+  <div class="mono">Connecting the Dots · At Scale · Self-Forging v4 · The Scout · The Distiller · Opus 5</div>
   <h1>🔗 The Dot-Connector AI</h1>
-  <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง<br><b style="color:var(--amber)">และเมื่อเจอเพดานของตัวเอง มันเขียนโค้ดของตัวเองใหม่เพื่อทำลายเพดานนั้น</b><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--amber)">📈 ใหม่ (Layer 06.8): มันเลิกตัดสินตัวเองแค่ที่วินาทีที่โค้ดเขียนเสร็จ — ทุกรอบขยายต้องประกาศ "เส้นทางที่ความสามารถนี้จะถูกใช้ผ่าน" แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะให้คะแนนรอบนั้นด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ · รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลง</span><br><span style="color:var(--dot-a)">🧠 ใหม่ (Layer 06.9): เครื่องมือเชื่อมจุดเลิกลืมจุดของตัวเองตอนเขียนโค้ดตัวเอง — รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน · คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่าช่วยทำลายกำแพงได้จริงหรือไม่</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
+  <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง<br><b style="color:var(--amber)">และเมื่อเจอเพดานของตัวเอง มันเขียนโค้ดของตัวเองใหม่เพื่อทำลายเพดานนั้น</b><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
   <div id="serendipity" class="on">
     <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
       <span class="mono">Serendipity Engine · ทำงานเบื้องหลัง</span>
@@ -652,7 +570,7 @@
     <div class="layer-head">
       <span class="mono">Layer 06 · The Self-Forge</span>
       <h2>ขอบเขตของระบบตัวเอง</h2>
-      <span class="hint">📈 ใหม่ (Layer 06.8): "ผ่านทุกด่าน" เลิกเป็นคำตัดสินสุดท้าย — ทุกรอบต้องประกาศเส้นทางที่ความสามารถของมันจะถูกใช้ผ่าน แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะบอกว่ามีใครเรียกไหม · เครื่องมือนี้อ่านซอร์สโค้ดของตัวเอง ตั้งชื่อกำแพงของตัวเอง แล้วเขียนโค้ดทำลายมัน · รอบที่ล้มเหลวไม่ถูกลืม: บทเรียนถูกส่งต่อให้รอบถัดไป และเพดานการลองขยับได้เมื่อเสนอวิธีที่ต่างจากเดิมจริง · 🔁 และตั้งแต่ Layer 06.7 ผลตรวจไม่ต้องรอรอบหน้าอีกแล้ว: มันถูกป้อนกลับให้แก้ทันทีในรอบเดียวกัน</span>
+      <span class="hint">เครื่องมือนี้อ่านซอร์สโค้ดของตัวเอง ตั้งชื่อกำแพงของตัวเอง แล้วเขียนโค้ดทำลายมัน · รอบที่ล้มเหลวไม่ถูกลืม: บทเรียนถูกส่งต่อให้รอบถัดไป และเพดานการลองขยับได้เมื่อเสนอวิธีที่ต่างจากเดิมจริง · 🔁 และตั้งแต่ Layer 06.7 ผลตรวจไม่ต้องรอรอบหน้าอีกแล้ว: มันถูกป้อนกลับให้แก้ทันทีในรอบเดียวกัน</span>
     </div>
 
     <div class="restart-banner" id="restartBanner">
@@ -688,40 +606,6 @@
     </div>
 
     <div id="endpointZone" style="display:none"></div>
-
-    <div class="layer-head" style="margin-top:2rem">
-      <span class="mono">Layer 06.8 · The Adoption Ledger</span>
-      <h2>ด่านที่มาทีหลัง: มีใครใช้ของที่มันสร้างไว้จริงไหม</h2>
-      <span class="hint">ทุกด่านก่อนหน้านี้ตัดสินในวันที่โค้ดเขียนเสร็จ · ด่านนี้ตัดสินอีก N วันให้หลัง โดยเปิดบันทึกการใช้งานจริงมาให้คะแนนด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ — รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และคะแนนนี้ถูกป้อนกลับเข้าการเลือกกำแพงถัดไป</span>
-    </div>
-
-    <div class="adopt-bar" id="adoptBar">กำลังอ่านว่ามีใครใช้ของที่ระบบสร้างไว้บ้าง…</div>
-
-    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.9rem;align-items:center">
-      <button class="btn small ghost" id="adoptToggle" onclick="toggleAdoption(this)">📈 ดูทุกรอบและเส้นทางที่มันประกาศไว้</button>
-      <button class="btn small ghost" id="rankToggle" onclick="toggleRanking(this)">⚖ ลำดับกำแพงถัดไปหลังถ่วงด้วยคะแนนการถูกใช้</button>
-      <span id="adoptNote" style="font-size:0.82rem;color:var(--ink-faint)"></span>
-    </div>
-
-    <div id="adoptZone" style="display:none"></div>
-    <div id="rankZone" style="display:none"></div>
-
-    <div class="layer-head" style="margin-top:2rem">
-      <span class="mono">Layer 06.9 · The Self-Connector</span>
-      <h2>เครื่องมือเชื่อมจุด ใช้จุดของตัวเองตอนเขียนโค้ดตัวเอง</h2>
-      <span class="hint">ทั้งระบบตั้งอยู่บนสมมติฐานว่า "คำตอบที่ดีเกิดจากการทาบโครงสร้างข้ามโดเมน" แต่พรอมป์ตหลอมตัวเองเคยได้รับแค่ตัวขอบเขต ประวัติความล้มเหลว และซอร์สโค้ด — ไม่มีจุดความรู้แม้แต่จุดเดียว · ตอนนี้รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน — คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่ามันช่วยอะไรจริง</span>
-    </div>
-
-    <div class="know-bar" id="knowBar">กำลังอ่านว่าคลังความรู้ถูกใช้ตอนเขียนโค้ดตัวเองบ้างไหม…</div>
-
-    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.9rem;align-items:center">
-      <button class="btn small ghost" id="knowToggle" onclick="toggleForgeKnowledge(this)">🧠 ดูความรู้ที่รอบถัดไปจะได้อ่าน</button>
-      <button class="btn small" id="insightBtn" onclick="runWallInsight(null, this)">⚡ สั่งรอบเชื่อมจุดเล็งกำแพงเป้าหมาย</button>
-      <button class="btn small ghost" id="knowDryBtn" onclick="dryrunForgeFeedback(this)">🧪 ลองด่านป้อนกลับด้วยรอบสมมติ</button>
-      <span id="knowNote" style="font-size:0.82rem;color:var(--ink-faint)"></span>
-    </div>
-
-    <div id="knowZone" style="display:none"></div>
 
     <div class="layer-head" style="margin-top:2rem">
       <span class="mono">Evolution Ledger</span>
@@ -819,10 +703,6 @@ async function loadDots() {
         ? `<span class="value-badge ${d.dead_end ? "bad" : d.proven ? "good" : ""}" title="คะแนนคุณค่าจากผลลัพธ์จริงของ ${d.rated_uses} การเชื่อม">${d.dead_end ? "📉" : d.proven ? "📈" : "⚖"} คุณค่า ${d.value_score > 0 ? "+" : ""}${d.value_score}</span>`
         : "",
       `<span title="ลำดับความสนใจ = ความหายาก × คุณค่าที่พิสูจน์แล้ว">👁 ${d.attention_score}</span>`,
-      // Layer 06.9: ...and whether this dot has ever helped the engine break its own wall.
-      d.forge_uses
-        ? `<span class="value-badge ${d.forge_proven ? "good" : d.forge_score < 0 ? "bad" : ""}" title="Layer 06.9: จุดนี้ถูกรอบหลอมตัวเองอ้างว่าใช้หลักการของมัน ${d.forge_uses} ครั้ง แล้วผลของด่านทั้งหมดให้คะแนนกลับมาเท่านี้">🔥 ช่วยทำลายกำแพง ${d.forge_score > 0 ? "+" : ""}${d.forge_score} (${d.forge_uses} ครั้ง)</span>`
-        : "",
       d.absorbed_count
         ? `<span title="จุดนี้ยุบรวมมาจาก: ${esc((d.absorbed_titles || []).join(" · "))}" style="color:var(--dot-b);font-weight:700">⚗ ยุบรวมจาก ${d.absorbed_count} จุด</span>`
         : "",
@@ -1394,11 +1274,6 @@ async function loadResults(freshId) {
     return `<div class="result-card ${c.id === freshId ? "fresh" : ""}">
       <div class="when">${new Date(c.created_at).toLocaleString("th-TH")}${c.focus ? " · โจทย์: " + esc(c.focus) : ""}${c.auto ? " · 🌠 เชื่อมอัตโนมัติโดย Serendipity Engine" : c.revived_dots?.length ? " · ⚡ Serendipity Revival" : ""}</div>
       <h3>💡 ${esc(inv.name || "ไม่มีชื่อ")}</h3>
-      ${c.forge
-        ? `<div style="margin-bottom:0.5rem"><span class="forge-tag" title="Layer 06.9: การเชื่อมนี้คือรอบหลอมตัวเองที่ประกาศว่าใช้หลักการจากจุดด้านล่าง — คะแนนผลลัพธ์ถูกให้โดยด่านของระบบ ไม่ใช่โดยมนุษย์">🔥 รอบหลอมตัวเอง ${esc(c.forge.evo_id || "")} · ${c.forge.verdict === "accepted" ? "กำแพงล้มจริง" : "รอบตกและถูกย้อนกลับ"} · คะแนนนี้ถูกให้โดยด่านของระบบ</span></div>`
-        : c.wall
-          ? `<div style="margin-bottom:0.5rem"><span class="forge-tag" title="Layer 06.9: รอบเชื่อมจุดที่ถูกเล็งไปที่กำแพงของระบบเอง เพื่อให้รอบหลอมตัวเองครั้งถัดไปได้อ่านรูปแบบเชิงโครงสร้างนี้">🎯 เล็งกำแพงของระบบเอง: ${esc(c.wall.title || "")}</span></div>`
-          : ""}
       <div class="used-dots">${dotsHtml}</div>
       <div class="rc-row"><span class="mono">Hidden Pattern</span><p>${esc(c.hidden_pattern)}</p></div>
       <div class="rc-row"><span class="mono">Connection</span><p>${esc(c.connection)}</p></div>
@@ -1419,18 +1294,13 @@ const CAT_LABEL = {
 };
 
 async function loadForge() {
-  const [self, limits, evo, loop, adoption] = await Promise.all([
+  const [self, limits, evo, loop] = await Promise.all([
     getJson("/api/self"),
     getJson("/api/limits"),
     getJson("/api/evolution"),
     // Layer 06.7: the round is a conversation now — show how many turns it may take.
     getJson("/api/forge/loop").catch(() => null),
-    // Layer 06.8: ...and whether anything those rounds built was ever called.
-    getJson("/api/adoption").catch(() => null),
   ]);
-  adoptionReport = adoption;
-  adoptionByRound = {};
-  for (const r of (adoption && adoption.rounds) || []) adoptionByRound[r.evo_id] = r;
 
   const broken = limits.filter(l => l.status === "broken");
   document.getElementById("forgeBar").innerHTML =
@@ -1442,10 +1312,6 @@ async function loadForge() {
         (loop.repaired_rounds ? ` (เคยกู้รอบที่กำลังจะตกกลับมาได้ ${loop.repaired_rounds} รอบ)` : "")
       : "") +
     ` · ⏱ วิวัฒนาการอัตโนมัติ: <b>${self.evolve_hours > 0 ? "ทุก " + self.evolve_hours + " ชม." : "ปิดอยู่"}</b>` +
-    (self.adoption
-      ? ` · 📈 <b title="Layer 06.8: ด่านที่ตัดสินหลังจากรอบจบไปแล้ว ${self.adoption.grace_days} วัน โดยดูว่ามีใครเรียกเส้นทางที่รอบนั้นประกาศไว้จริงไหม">ของที่ถูกใช้จริง ${self.adoption.counts.adopted}/${self.adoption.counts.scored || 0} รอบที่ให้คะแนนได้</b>` +
-        (self.adoption.counts.unused ? ` (<span style="color:var(--danger)">ไม่มีใครเรียกเลย ${self.adoption.counts.unused}</span>)` : "")
-      : "") +
     (self.last_evolution ? ` · ล่าสุด ${new Date(self.last_evolution).toLocaleString("th-TH")}` : "");
   document.getElementById("restartBanner").classList.toggle("on", !!self.restart_required);
 
@@ -1467,306 +1333,7 @@ async function loadForge() {
   ev.innerHTML = evo.length ? evo.map(evoCard).join("")
     : `<p class="empty">ยังไม่มีรอบวิวัฒนาการ</p>`;
 
-  renderAdoption();
-  loadSelfConnector();
   loadConsolidation();
-}
-
-/* ---- Layer 06.8: the engine's own return path ----
-   ทุกด่านก่อนหน้านี้ตัดสินตอนโค้ดเขียนเสร็จ แถบนี้คือด่านที่ต้องรอเวลา: บันทึกการใช้งานจริง
-   ตอบว่ามีใครเรียกเส้นทางที่แต่ละรอบประกาศไว้บ้าง แล้วคะแนนนั้นย้อนกลับไปจัดลำดับกำแพงถัดไป */
-let adoptionReport = null;
-let adoptionByRound = {};
-
-const ADOPT_LABEL = {
-  adopted: "✅ ถูกใช้จริง",
-  unused: "❌ ไม่มีใครเรียกเลย",
-  pending: "⏳ ยังรอเวลาตัดสิน",
-  undeclared: "◻ เกิดก่อนชั้นนี้ วัดไม่ได้",
-  unmeasurable: "◻ ไม่ได้ประกาศเส้นทาง",
-  exempt: "· ไม่ต้องวัด",
-};
-
-function renderAdoption() {
-  const bar = document.getElementById("adoptBar");
-  const a = adoptionReport;
-  if (!a) { bar.textContent = "อ่านบันทึกการถูกใช้จริงไม่ได้"; return; }
-  const c = a.counts || {};
-  bar.innerHTML =
-    `📈 <b>เส้นตอบกลับของตัวระบบเอง</b> — ให้คะแนนได้แล้ว <b>${c.scored || 0}</b>/${(c.total || 0)} รอบ` +
-    ` · <span class="good">✅ ถูกใช้จริง ${c.adopted || 0}</span>` +
-    ` · <span class="bad">❌ ไม่มีใครเรียกเลย ${c.unused || 0}</span>` +
-    ` · <span class="wait">⏳ ยังรอเวลา ${c.pending || 0}</span>` +
-    ` · ◻ เกิดก่อนชั้นนี้ ${c.undeclared || 0}` +
-    ` · คะแนนเฉลี่ยของทั้งระบบ <b>${a.signal === null ? "ยังไม่มี" : (a.signal > 0 ? "+" : "") + a.signal}</b>` +
-    ` · เกณฑ์: รอ ${a.grace_days} วัน และบันทึกต้องเห็นคำขอครบ ${a.min_requests} ครั้ง (ตอนนี้ ${a.observed_requests})` +
-    (a.consolidation_due
-      ? ` · <span class="bad">⚠ ไม่มีใครเรียกติดกัน ${a.unused_streak} รอบ — ระบบเสนอรอบยุบรวมเองแล้ว</span>`
-      : "") +
-    (a.young_ledger ? ` · <span style="color:var(--danger)">⚠ บันทึกยังใหม่ (${a.tracking_hours} ชม.)</span>` : "");
-}
-
-function adoptRow(r) {
-  const eps = (r.endpoints || []).map(e =>
-    `<code title="${e.new_route ? "เส้นทางใหม่ที่รอบนี้สร้าง" : "เส้นทางเดิม — นับให้เมื่อถูกเรียกหลังวันที่ประกาศ"}" style="color:${e.used_since_declared ? "var(--ok)" : "var(--ink-faint)"}">${esc(e.endpoint)} ${e.hits}×</code>`
-  ).join(" ");
-  return `<div class="adopt-row ${r.status}">
-    <span class="adopt-tag ${r.status}">${ADOPT_LABEL[r.status] || r.status}</span>
-    <code>${esc(r.evo_id || "")}</code>
-    <span style="color:var(--ink-faint);font-size:0.76rem">${r.at ? new Date(r.at).toLocaleDateString("th-TH") : ""}${r.mode === "consolidation" ? " · 🧹 รอบยุบรวม" : ""}</span>
-    <b>${esc(String(r.capability || r.limit?.title || "").slice(0, 90))}</b>
-    <span class="spacer"></span>
-    ${r.signal === null ? "" : `<b class="${r.signal >= 0 ? "good" : "bad"}" style="color:${r.signal >= 0 ? "var(--ok)" : "var(--danger)"}">คะแนน ${r.signal > 0 ? "+" : ""}${r.signal}</b>`}
-    ${eps ? `<div style="width:100%;margin-top:0.25rem">${eps}</div>` : ""}
-    <div class="adopt-why">${esc(r.why || "")}</div>
-  </div>`;
-}
-
-function toggleAdoption(btn) {
-  const zone = document.getElementById("adoptZone");
-  if (zone.style.display !== "none") {
-    zone.style.display = "none";
-    btn.textContent = "📈 ดูทุกรอบและเส้นทางที่มันประกาศไว้";
-    return;
-  }
-  zone.style.display = "block";
-  btn.textContent = "📈 ซ่อนรายการรอบ";
-  const a = adoptionReport || {};
-  const rounds = (a.rounds || []).filter(r => r.status !== "exempt");
-  zone.innerHTML = rounds.length
-    ? `<p style="font-size:0.82rem;color:var(--ink-faint);margin-bottom:0.6rem">${esc(a.rule || "")}</p>` +
-      rounds.map(adoptRow).join("")
-    : `<p class="empty">ยังไม่มีรอบที่ต้องวัดการใช้งาน</p>`;
-}
-
-/* ลำดับกำแพงถัดไป = การประเมินก่อนสร้าง (unlock − risk/2) ถ่วงด้วยสิ่งที่เกิดขึ้นจริงกับของที่เคยสร้างในหมวดนั้น */
-function toggleRanking(btn) {
-  const zone = document.getElementById("rankZone");
-  if (zone.style.display !== "none") {
-    zone.style.display = "none";
-    btn.textContent = "⚖ ลำดับกำแพงถัดไปหลังถ่วงด้วยคะแนนการถูกใช้";
-    return;
-  }
-  zone.style.display = "block";
-  btn.textContent = "⚖ ซ่อนลำดับกำแพง";
-  const a = adoptionReport || {};
-  const rows = a.ranking || [];
-  zone.innerHTML = rows.length
-    ? `<p style="font-size:0.82rem;color:var(--ink-faint);margin-bottom:0.4rem">
-        คะแนนพื้นฐานคือ "การประเมินก่อนลงมือ" (unlock − risk/2) · ส่วนที่ถ่วงคือ "สิ่งที่เกิดขึ้นจริง" กับของที่เคยสร้างในหมวดเดียวกัน (น้ำหนัก ${a.adoption_weight ?? 2})
-        · หมวดที่ยังไม่มีรอบไหนถูกให้คะแนนจะไม่ถูกถ่วงเลย
-      </p><div class="rank-table">` +
-      rows.map((r, i) => `<div class="rank-row ${i === 0 ? "top" : ""}">
-        ${i === 0 ? "🎯" : "&nbsp;&nbsp;"} <b>${esc(r.title || r.id)}</b>
-        <span class="limit-cat">${esc(CAT_LABEL[r.category] || r.category)}</span>
-        <span class="spacer"></span>
-        <span class="flat">พื้นฐาน ${r.base}</span>
-        <span class="${r.adoption_adjust > 0 ? "up" : r.adoption_adjust < 0 ? "down" : "flat"}" title="คะแนนการถูกใช้จริงของหมวดนี้: ${r.adoption_signal === null ? "ยังไม่มี" : r.adoption_signal}">${r.adoption_adjust > 0 ? "+" : ""}${r.adoption_adjust}</span>
-        <b>= ${r.score}</b>
-      </div>`).join("") + `</div>`
-    : `<p class="empty">ยังไม่มีกำแพงที่รอทำลาย</p>`;
-}
-
-/* ---- Layer 06.9: The Self-Connector ----
-   เดิมพรอมป์ตหลอมตัวเองไม่มีจุดความรู้แม้แต่จุดเดียว ทั้งที่ทั้งระบบตั้งอยู่บนการทาบโครงสร้างข้ามโดเมน
-   แถบนี้แสดง "ความรู้ที่รอบถัดไปจะได้อ่านจริง" และตารางคะแนนว่าจุดไหนเคยช่วยทำลายกำแพงได้จริง */
-let forgeKnowledgeCache = null;
-
-async function loadSelfConnector() {
-  const bar = document.getElementById("knowBar");
-  try {
-    const k = await getJson("/api/forge/knowledge");
-    forgeKnowledgeCache = k;
-    const s = k.status || {};
-    const f = k.feedback || {};
-    bar.innerHTML =
-      `🧠 <b>คลังความรู้ที่รอบหลอมตัวเองได้อ่าน</b> — เป้าหมายถัดไป: <b>${esc(k.target ? k.target.title : "ยังไม่มีกำแพงที่รอทำลาย")}</b>` +
-      ` · ยัดเข้าหัวพรอมป์ต <b>${(k.dots || []).length}</b> จุดจากคลัง ${k.pool_dots || 0} จุด` +
-      ` (${(k.domains || []).length} โดเมน · ${(k.block_chars || 0).toLocaleString()} ตัวอักษร · เพดาน ${(k.caps || {}).dots} จุด × ${(k.caps || {}).dot_chars} ตัวอักษร)` +
-      ` · <span class="good">📈 จุดที่พิสูจน์แล้วว่าช่วยทำลายกำแพงได้ ${s.forge_proven_dots || 0}</span>` +
-      (s.forge_dead_dots ? ` · <span class="bad">📉 ถูกอ้างแล้วกำแพงไม่ล้ม ${s.forge_dead_dots}</span>` : "") +
-      ` · รอบที่ประกาศว่าใช้จุดไหน <b>${f.declared_rounds || 0}</b>/${(f.declared_rounds || 0) + (f.undeclared_rounds || 0)}` +
-      (k.insight
-        ? ` · 🎯 มีรอบเชื่อมจุดที่เล็งกำแพงนี้แล้ว (${new Date(k.insight.at).toLocaleDateString("th-TH")}${k.insight.stale ? " · เก่ากว่าเพดานความสด" : ""})`
-        : ` · <span class="bad">🎯 ยังไม่มีรอบเชื่อมจุดที่เล็งกำแพงนี้</span>`) +
-      ` · ออกรอบเชื่อมจุดเองทุก <b>${(k.caps || {}).insight_hours > 0 ? (k.caps || {}).insight_hours + " ชม." : "ปิดอยู่"}</b>`;
-  } catch {
-    bar.textContent = "อ่านคลังความรู้ของรอบหลอมตัวเองไม่ได้";
-  }
-}
-
-async function toggleForgeKnowledge(btn) {
-  const zone = document.getElementById("knowZone");
-  if (zone.style.display !== "none") {
-    zone.style.display = "none";
-    btn.textContent = "🧠 ดูความรู้ที่รอบถัดไปจะได้อ่าน";
-    return;
-  }
-  zone.style.display = "block";
-  btn.textContent = "🧠 ซ่อนความรู้ที่รอบถัดไปจะได้อ่าน";
-  await renderForgeKnowledge(null);
-}
-
-// เปิดบล็อกความรู้ของกำแพงใดกำแพงหนึ่งจากรายการขอบเขตด้านบน
-async function showWallKnowledge(limitId, btn) {
-  const zone = document.getElementById("knowZone");
-  zone.style.display = "block";
-  document.getElementById("knowToggle").textContent = "🧠 ซ่อนความรู้ที่รอบถัดไปจะได้อ่าน";
-  btn.disabled = true;
-  try {
-    await renderForgeKnowledge(limitId);
-    zone.scrollIntoView({ behavior: "smooth", block: "start" });
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function renderForgeKnowledge(limitId) {
-  const zone = document.getElementById("knowZone");
-  zone.innerHTML = '<p class="empty">กำลังประกอบบล็อกความรู้ที่รอบถัดไปจะได้อ่าน…</p>';
-  try {
-    const k = await getOk("/api/forge/knowledge" + (limitId ? "?limitId=" + encodeURIComponent(limitId) : ""), "อ่านคลังความรู้ไม่ได้");
-    if (!limitId) forgeKnowledgeCache = k;
-    const dots = (k.dots || []).map(d => {
-      const cls = d.forge_proven ? "helped" : d.forge_score < 0 ? "hurt" : "";
-      return `<div class="know-dot ${cls}">
-        <div class="head">
-          <span class="domain" style="color:${domainColor(d.domain)};border-color:${domainColor(d.domain)}">${esc(d.domain)}</span>
-          <b>${esc(d.title)}</b>
-          <span class="spacer"></span>
-          <span style="color:var(--ink-faint);font-size:0.76rem" title="ความเกี่ยว = ทาบโครงสร้างตรงกัน × 3 + ลำดับความสนใจ + ประวัติการช่วยทำลายกำแพง">ความเกี่ยว ${d.relevance} (ทาบตรงกัน ${d.wall_overlap})</span>
-        </div>
-        <div class="body">${esc(d.content)}</div>
-        <div class="why">👁 ลำดับความสนใจ ${d.attention_score}${d.rated_uses ? ` · ⚖ คุณค่าจากผลลัพธ์จริง ${d.value_score > 0 ? "+" : ""}${d.value_score}` : ""} · ${
-          d.forge_uses
-            ? `<span class="know-score ${d.forge_score > 0 ? "up" : d.forge_score < 0 ? "down" : ""}">🔥 ถูกอ้างในรอบหลอมตัวเอง ${d.forge_uses} ครั้ง คะแนน ${d.forge_score > 0 ? "+" : ""}${d.forge_score}</span>`
-            : "ยังไม่เคยถูกใช้ในรอบหลอมตัวเองเลย"
-        } · ${esc(d.origin_label || "")}</div>
-      </div>`;
-    }).join("");
-    const insight = k.insight
-      ? `<div class="insight-box">
-          <span class="mono">🎯 รอบเชื่อมจุดที่เล็งกำแพงนี้โดยเฉพาะ · ${new Date(k.insight.at).toLocaleString("th-TH")}${k.insight.stale ? " · เก่ากว่าเพดานความสดแล้ว" : ""}</span>
-          <div>โจทย์ที่ตั้งให้: <b>${esc(k.insight.focus || "")}</b></div>
-          <div>จุดที่มันเลือกมาเชื่อม: ${k.insight.dots.map(d => `<b>${esc(d.title)}</b> [${esc(d.domain)}]`).join(" + ") || "-"}</div>
-          <div>รูปแบบเชิงโครงสร้างที่มันเห็น: ${esc(k.insight.hidden_pattern || "")}</div>
-          <div>การลากเส้นเชื่อม: ${esc(k.insight.connection_text || "")}</div>
-          <div>สิ่งที่มันเสนอ: <b>${esc((k.insight.innovation || {}).name || "")}</b> — ${esc((k.insight.innovation || {}).description || "")}</div>
-         </div>`
-      : `<div class="insight-box none">🎯 ยังไม่มีรอบเชื่อมจุดที่เล็งกำแพงนี้ — กด "⚡ สั่งรอบเชื่อมจุดเล็งกำแพงเป้าหมาย" เพื่อให้ระบบเอาเครื่องมือเชื่อมจุดของตัวเองมาเล็งกำแพงนี้ (โจทย์ที่จะตั้งให้: <b>${esc(k.insight_focus || "-")}</b>)</div>`;
-    const board = (k.dot_scoreboard || []).map(d =>
-      `<div class="rank-row ${d.forge_proven ? "top" : ""}">
-        ${d.forge_proven ? "📈" : d.forge_score < 0 ? "📉" : "⚖"} <b>${esc(d.title)}</b>
-        <span class="limit-cat">${esc(d.domain)}</span>
-        <span class="spacer"></span>
-        <span class="${d.forge_score > 0 ? "up" : d.forge_score < 0 ? "down" : "flat"}">คะแนนช่วยทำลายกำแพง ${d.forge_score > 0 ? "+" : ""}${d.forge_score}</span>
-        <span class="flat">ถูกอ้าง ${d.forge_uses} ครั้ง</span>
-      </div>`).join("");
-    const fb = k.feedback || {};
-    const rounds = (fb.declared || []).map(r =>
-      `<div class="adopt-row ${r.verdict === "accepted" ? "adopted" : "unused"}">
-        <span class="adopt-tag ${r.verdict === "accepted" ? "adopted" : "unused"}">${r.verdict === "accepted" ? "✅ กำแพงล้ม" : "❌ รอบตก"}</span>
-        <code>${esc(r.evo_id)}</code>
-        <b>${esc(r.limit || "")}</b>
-        <span class="spacer"></span>
-        ${r.signal === null ? "" : `<b style="color:${r.signal >= 0 ? "var(--ok)" : "var(--danger)"}">คะแนนที่ป้อนกลับให้จุด ${r.signal > 0 ? "+" : ""}${r.signal}</b>`}
-        <div class="adopt-why">ใช้หลักการจาก: ${r.dots.map(d => esc(d.title)).join(" · ") || "-"}${r.missing.length ? ` · ⚠ อ้าง id ที่ไม่มีในคลัง: ${r.missing.map(esc).join(", ")}` : ""}<br>${esc(r.principle || "")}</div>
-      </div>`).join("");
-    const silent = (fb.undeclared || []).slice(0, 8).map(r =>
-      `<div class="adopt-row undeclared">
-        <span class="adopt-tag undeclared">◻ ไม่ได้ประกาศ</span>
-        <code>${esc(r.evo_id)}</code><b>${esc(r.limit || "")}</b>
-        <div class="adopt-why">${esc(r.why || "")}</div>
-      </div>`).join("");
-    zone.innerHTML =
-      `<p style="font-size:0.82rem;color:var(--ink-faint);margin-bottom:0.6rem">${esc(k.rule || "")}</p>` +
-      (k.message ? `<p class="empty">${esc(k.message)}</p>` : "") +
-      insight +
-      `<div class="layer-head" style="margin-top:0.8rem"><span class="mono">หลักการข้ามโดเมนที่จะถูกยัดเข้าหัวพรอมป์ต</span></div>` +
-      (dots || `<p class="empty">คลังยังว่าง</p>`) +
-      (board
-        ? `<div class="layer-head" style="margin-top:1rem"><span class="mono">คลังถูกพิสูจน์ด้วยการช่วยทำลายกำแพงจริงหรือไม่</span></div><div class="rank-table">${board}</div>`
-        : `<p class="empty" style="margin-top:0.8rem">ยังไม่มีจุดไหนถูกรอบหลอมตัวเองอ้างว่าใช้ — คลังจึงยังไม่ถูกพิสูจน์ด้วยวิธีนี้</p>`) +
-      (rounds ? `<div class="layer-head" style="margin-top:1rem"><span class="mono">รอบที่วางเดิมพันกับคลัง</span></div>${rounds}` : "") +
-      (silent ? `<div class="layer-head" style="margin-top:1rem"><span class="mono">รอบที่ไม่ได้ประกาศว่าใช้ความรู้จากจุดไหน</span></div>${silent}` : "") +
-      `<div style="margin-top:0.8rem">
-         <button class="btn small ghost" onclick="showKnowledgeBlock(this)">🧾 ดูบล็อกข้อความจริงที่จะถูกส่งเข้าพรอมป์ต (${(k.block_chars || 0).toLocaleString()} ตัวอักษร)</button>
-         <pre class="proof-code" id="knowBlockCode">${esc(k.block || "")}</pre>
-       </div>`;
-  } catch (e) {
-    zone.innerHTML = `<p class="empty">⚠ ${esc(e.message)}</p>`;
-  }
-}
-
-function showKnowledgeBlock(btn) {
-  const box = document.getElementById("knowBlockCode");
-  const open = box.classList.toggle("on");
-  btn.textContent = open ? "🧾 ซ่อนบล็อกข้อความจริง" : "🧾 ดูบล็อกข้อความจริงที่จะถูกส่งเข้าพรอมป์ต";
-}
-
-async function runWallInsight(limitId, btn) {
-  if (!confirm(
-    "ให้ระบบเอา \"เครื่องมือเชื่อมจุด\" ของตัวเองมาเล็งกำแพงของตัวเอง\n\n" +
-    "มันจะรันรอบเชื่อมจุดหนึ่งรอบโดยตั้งโจทย์ = คำอธิบายกำแพง + เหตุผลที่กำแพงนั้นยังอยู่\n" +
-    "แล้วรอบหลอมตัวเองครั้งถัดไปจะได้อ่าน \"รูปแบบเชิงโครงสร้าง\" ที่ได้ในหัวพรอมป์ต\n\n" +
-    "ใช้ AI จริง 1–4 นาที ดำเนินการต่อ?"
-  )) return;
-  const note = document.getElementById("knowNote");
-  btn.disabled = true;
-  note.textContent = "⚡ กำลังเชื่อมจุดโดยเล็งกำแพงของตัวเอง… (1–4 นาที)";
-  try {
-    const r = await postJson("/api/forge/insight", limitId ? {limitId} : {});
-    note.innerHTML = `✅ ได้รูปแบบข้ามโดเมนสำหรับกำแพง <b>${esc(r.wall.title)}</b> จาก ${r.insight.dots.map(d => esc(d.title)).join(" + ")} — รอบหลอมตัวเองครั้งถัดไปจะได้อ่านมันในหัวพรอมป์ต`;
-    loadSelfConnector();
-    if (document.getElementById("knowZone").style.display !== "none") renderForgeKnowledge(limitId);
-    loadResults();
-    loadDots();
-  } catch (e) {
-    note.textContent = "⚠ " + e.message;
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-/* ลองด่านป้อนกลับด้วยรอบสมมติ: เรียกฟังก์ชันตัวจริงด้วยรอบปลอม จึงเห็นได้ทันทีว่าการประกาศว่า
-   "ใช้หลักการจากจุดนี้" ทำให้คะแนนของจุดนั้นขยับไปทางไหน โดยไม่เสียรอบ AI และไม่แตะคลัง */
-async function dryrunForgeFeedback(btn) {
-  const k = forgeKnowledgeCache || (await getJson("/api/forge/knowledge"));
-  forgeKnowledgeCache = k;
-  const ids = (k.dots || []).slice(0, 2).map(d => d.id);
-  const note = document.getElementById("knowNote");
-  if (!ids.length) { note.textContent = "คลังยังไม่มีจุดให้ลอง"; return; }
-  btn.disabled = true;
-  note.textContent = "🧪 กำลังเรียกด่านป้อนกลับตัวจริงด้วยรอบสมมติ…";
-  try {
-    const mk = (verdict) => ({
-      id: "evo_dryrun",
-      at: new Date().toISOString(),
-      mode: "expansion",
-      verdict,
-      limit: k.target || {id: "?", title: "(ไม่มีกำแพงเป้าหมาย)", category: "knowledge"},
-      reason: "รอบสมมติสำหรับลองด่านป้อนกลับ",
-      report: {used_dot_ids: ids, used_principle: "รอบสมมติ: อ้างว่าใช้หลักการจากจุดที่บล็อกความรู้เลือกมาให้"},
-    });
-    const [ok, bad] = await Promise.all([
-      postJson("/api/forge/knowledge/dryrun", {round: mk("accepted")}),
-      postJson("/api/forge/knowledge/dryrun", {round: mk("rejected")}),
-    ]);
-    const row = (label, r, cls) => {
-      const f = r.feedback || {};
-      return `<div class="gate ${cls}"><b>${label} → สัญญาณ ${f.signal > 0 ? "+" : ""}${f.signal}</b>` +
-        (f.moves || []).map(m =>
-          `<span>${esc(m.title)}: คุณค่า ${m.value_before} → <b>${m.value_after}</b> · คะแนนช่วยทำลายกำแพง ${m.forge_score_before} → <b>${m.forge_score_after}</b> · ลำดับความสนใจ ${m.attention_before} → <b>${m.attention_after}</b>${m.proven_after ? " · 📈 ขึ้นเป็นจุดที่พิสูจน์แล้ว" : m.dead_end_after ? " · 📉 ตกเป็นจุดทางตัน" : ""}</span>`
-        ).join("") + `</div>`;
-    };
-    note.innerHTML =
-      `🧪 <b>ด่านป้อนกลับตัวจริง เรียกด้วยรอบสมมติ</b> (ไม่เขียนอะไรลงคลัง) — จุดที่ถูกอ้าง: ${ids.map(esc).join(", ")}` +
-      row("รอบที่ผ่านทุกด่าน", ok, "ok") + row("รอบที่ตกและถูกย้อนกลับ", bad, "no");
-  } catch (e) {
-    note.textContent = "⚠ " + e.message;
-  } finally {
-    btn.disabled = false;
-  }
 }
 
 /* ---- Layer 06.6: the other direction — what the engine may shrink, and what proves it ---- */
@@ -1794,11 +1361,7 @@ async function loadConsolidation() {
       ` · sweep <b>${ep.sweeping}/${ep.declared}</b> เส้น (ถอดแล้ว ${ep.retired || 0})` +
       ` · ชุดทดสอบสะสมที่ต้องผ่านเหมือนเดิมทุกไฟล์: <b>${p.suite_size}</b> ไฟล์` +
       ` · สะสมรอบขยายมา <b>${p.rounds_since_consolidation}</b>/${p.consolidate_every} รอบ` +
-      // Layer 06.8: growth is not the only debt — unused capabilities are one too.
-      ((p.unused_capabilities || []).length
-        ? ` · <span class="due">⚠ ความสามารถที่ไม่มีใครเรียกเลย ${p.unused_capabilities.length} รอบ (ระบบเสนอเป็นเป้าหมายของรอบนี้เอง)</span>`
-        : "") +
-      (p.due ? ` · <span class="due">⚠ ถึงคิวยุบรวมแล้ว${p.due_reason ? " — " + esc(p.due_reason) : ""}</span>` : "") +
+      (p.due ? ' · <span class="due">⚠ ถึงคิวยุบรวมแล้ว</span>' : "") +
       (p.last_consolidation
         ? ` · ยุบรวมล่าสุด ${new Date(p.last_consolidation.at).toLocaleString("th-TH")}`
         : " · ยังไม่เคยยุบรวมตัวเองเลย");
@@ -1928,13 +1491,8 @@ function limitRow(l, isNext) {
     <span class="meter">ปลดล็อก <i style="--v:${(l.unlock_score || 0) * 10}%"></i> ${l.unlock_score}/10</span>
     <span class="meter risk">ความเสี่ยง <i style="--v:${(l.risk || 0) * 10}%"></i> ${l.risk}/10</span>
     ${budget}
-    ${Number.isFinite(l.adoption_adjust) && l.adoption_adjust !== 0
-      ? `<span title="Layer 06.8: คะแนนการถูกใช้จริงของหมวดนี้ (${l.adoption_signal}) ถ่วงลำดับความคุ้มของกำแพงนี้จาก ${l.priority_base} เป็น ${l.priority_score} — หมวดที่เคยผลิตของที่ไม่มีใครเรียกจะถูกลดลำดับลง">📈 ลำดับ ${l.priority_score} <span style="color:${l.adoption_adjust > 0 ? "var(--ok)" : "var(--danger)"};font-weight:700">${l.adoption_adjust > 0 ? "+" : ""}${l.adoption_adjust}</span></span>`
-      : ""}
     <span class="spacer"></span>
     ${scars ? `<button class="btn small ghost" onclick="showScars('${l.id}', this)">🩹 บทเรียนจาก ${scars} รอบที่ล้มเหลว</button>` : ""}
-    <button class="btn small ghost" onclick="showWallKnowledge('${l.id}', this)" title="Layer 06.9: หลักการข้ามโดเมนจากคลังที่รอบหลอมตัวเองจะได้อ่านก่อนแตะโค้ด">🧠 ความรู้ที่จะใช้กับกำแพงนี้</button>
-    <button class="btn small ghost" onclick="runWallInsight('${l.id}', this)" title="Layer 06.9: เอาเครื่องมือเชื่อมจุดมาเล็งกำแพงนี้ โดยตั้งโจทย์จากคำอธิบายกำแพง + เหตุผลที่มันยังอยู่">⚡ เชื่อมจุดเล็งกำแพงนี้</button>
     <button class="btn small ghost" onclick="transcend('${l.id}', this)">🔥 ทำลายขอบเขตนี้</button>`;
   return `<div class="${cls.join(" ")}">
     <div class="limit-head">
@@ -2049,23 +1607,6 @@ function evoCard(e) {
     : "";
   const files = (e.files || []).map(f =>
     `<span class="${f.action}">${esc(f.path)} ${f.action === "created" ? "+ใหม่" : f.lines >= 0 ? "+" + f.lines : f.lines}</span>`).join("");
-  // Layer 06.8: what this round promised about how it would be reached, and what the usage
-  // ledger has said about that promise since. "accepted" is no longer the end of the story.
-  const ad = adoptionByRound[e.id] || null;
-  const decl = e.adoption && (e.adoption.endpoints || []).length ? e.adoption : null;
-  const adoptLine = decl
-    ? `<div class="adopt-line ${ad ? ad.status : ""}">📈 ประกาศไว้ว่าจะถูกใช้ผ่าน: ${decl.endpoints.map(x => `<code>${esc(x)}</code>`).join(", ")}` +
-      (ad && ad.status !== "exempt"
-        ? ` — ${ADOPT_LABEL[ad.status] || ad.status}${ad.hits ? ` ${ad.hits} ครั้ง` : ""}` +
-          (ad.signal === null ? "" : ` · คะแนน ${ad.signal > 0 ? "+" : ""}${ad.signal}`) +
-          `<br><span style="color:var(--ink-faint)">${esc(ad.why || "")}</span>`
-        : "") +
-      (decl.note ? `<br><span style="color:var(--ink-faint)">คำสัญญาที่เขียนไว้: ${esc(decl.note)}</span>` : "") +
-      `</div>`
-    : "";
-  const adoptUsed = e.adoption_used && e.adoption_used.adoption_adjust
-    ? `<div class="meta">⚖ ตอนเลือกกำแพงนี้ ลำดับความคุ้มถูกถ่วงด้วยคะแนนการถูกใช้ของหมวด ${esc(e.adoption_used.category || "")}: ${e.adoption_used.base_score} → ${e.adoption_used.adjusted_score} (${e.adoption_used.adoption_adjust > 0 ? "+" : ""}${e.adoption_used.adoption_adjust})</div>`
-    : "";
   const c = e.checks || {};
   const chk = [
     c.guard === false ? '<span class="fail">✗ แตะความทรงจำ</span>' : '<span class="pass">✓ ไม่แตะความทรงจำ</span>',
@@ -2087,8 +1628,6 @@ function evoCard(e) {
     ${retired}
     ${refused}
     ${suite}
-    ${adoptLine}
-    ${adoptUsed}
     ${r.how_to_verify ? `<div class="meta">🔎 เห็นผลได้ที่: ${esc(r.how_to_verify)}</div>` : ""}
     ${r.next_boundary ? `<div class="meta">🧱 กำแพงถัดไปที่โผล่มา: ${esc(r.next_boundary)}</div>` : ""}
     ${files ? `<div class="file-chips">${files}</div>` : ""}

@@ -1,0 +1,18 @@
+[
+  {
+    "path": "public/index.html",
+    "existed": true
+  },
+  {
+    "path": "README.md",
+    "existed": true
+  },
+  {
+    "path": "selftest/evo_630305d2.js",
+    "existed": false
+  },
+  {
+    "path": "server.js",
+    "existed": true
+  }
+]

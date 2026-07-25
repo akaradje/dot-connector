@@ -16,17 +16,6 @@
  *                              to the next attempt; the 3-try cap becomes an earned budget
  * Layer 6.6 The Consolidator   the inverse round: proof must pass on BOTH trees and the
  *                              size metrics must fall (see consolidationVerdict)
- * Layer 6.8 The Adoption Ledger the engine's own return path: every round declares the
- *                              routes its capability will be used through, and N days later
- *                              the live usage ledger scores it with the SAME formula that
- *                              scores an idea. 0 hits → proposed for consolidation, and the
- *                              category's score bends selectTarget (see adoptionRound)
- * Layer 6.9 The Self-Connector the dot-connector finally connects dots while writing its own
- *                              code: a forge round reads the repository's actual principles,
- *                              the innovations it synthesised and a connect round aimed at the
- *                              wall — then must name which dots it used, and that claim is
- *                              scored by whether the wall fell (see forgeKnowledge /
- *                              applyForgeFeedback)
  * Layer 7   The Scout          knowledge stops being one-way — evidence finds become dots
  *                              and the engine searches the web for its own blind spots
  *
@@ -47,7 +36,6 @@ const INBOX_DIR = path.join(ROOT, "inbox");
 const INBOX_DONE = path.join(INBOX_DIR, "processed");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const EVO_DIR = path.join(ROOT, "evolution");
-const VERIFIER_DIR = path.join(ROOT, "verifier");
 // Layer 6: every evolution must ship an executable proof of its own new capability.
 const PROOF_DIR = path.join(ROOT, "selftest");
 const DOTS_FILE = path.join(DATA_DIR, "dots.json");
@@ -62,9 +50,6 @@ const MODEL = process.env.DOT_MODEL || "claude-opus-5";
 const HARVEST_MODEL = process.env.HARVEST_MODEL || "claude-opus-5";
 // Layer 6 rewrites this very file — it needs the whole codebase in context at once.
 const FORGE_MODEL = process.env.FORGE_MODEL || "claude-opus-5[1m]";
-// "index" hands the forge a symbol map and lets it Read what it needs; "full" inlines every
-// byte of source the way rounds 1-11 did. Set FORGE_BUNDLE=full to compare round quality.
-const FORGE_BUNDLE = process.env.FORGE_BUNDLE === "full" ? "full" : "index";
 const CONNECT_TIMEOUT_MS = 6 * 60 * 1000;
 const EVIDENCE_TIMEOUT_MS = 10 * 60 * 1000;
 const INTROSPECT_TIMEOUT_MS = 12 * 60 * 1000;
@@ -105,10 +90,6 @@ const REGRESSION_ENDPOINTS = [
   "/api/endpoints",
   "/api/knowledge/preview",
   "/api/knowledge/archive",
-  // Layer 6.8: the one route that reports whether any of the routes above are used at all.
-  "/api/adoption",
-  // Layer 6.9: the knowledge a forge round actually gets to read before it touches code.
-  "/api/forge/knowledge",
 ];
 // Layer 6.6: both ledgers live outside data/ on purpose. data/*.json is compared
 // byte-for-byte after every forge round, so an ordinary HTTP request arriving while the
@@ -120,35 +101,6 @@ const DEPRECATED_FILE = path.join(EVO_DIR, "deprecations.json");
 const CONSOLIDATE_EVERY = Number(process.env.CONSOLIDATE_EVERY || 3);
 // Upper bound on how many proof files one consolidation round re-runs against both trees.
 const CONSOLIDATE_SUITE_MAX = Number(process.env.CONSOLIDATE_SUITE_MAX || 8);
-/* Layer 6.8: how long a capability is allowed to be ignored before "nobody called it" is
- * treated as an answer instead of as silence. Both conditions must hold — a week of wall
- * clock AND a ledger that has actually seen traffic — because a quiet week during which
- * nobody opened the page at all says nothing about the capability. */
-const ADOPTION_DAYS = Math.max(1, Number(process.env.ADOPTION_DAYS || 7));
-const ADOPTION_MIN_REQUESTS = Math.max(1, Number(process.env.ADOPTION_MIN_REQUESTS || 50));
-// Hits at which a capability counts as fully fluent rather than merely touched once.
-const ADOPTION_FLUENT_HITS = Math.max(1, Number(process.env.ADOPTION_FLUENT_HITS || 10));
-// Consecutive scored rounds coming back unused before the engine owes itself a consolidation.
-const ADOPTION_STREAK = Math.max(1, Number(process.env.ADOPTION_STREAK || 2));
-// How hard a category's adoption record is allowed to bend selectTarget's ranking (0 = off).
-const ADOPTION_WEIGHT = Math.max(0, Number(process.env.ADOPTION_WEIGHT || 2));
-/* Layer 6.9: THE SELF-CONNECTOR — how much of the repository a forge round may read.
- * The whole system rests on "good answers come from laying one domain's structure over
- * another", and its most important layer was working in exactly one domain: its own source.
- * These caps are what let that be fixed without the prompt growing without end — the block
- * costs a bounded number of characters no matter how large the repository gets, and the
- * budget is reported next to the other prompt parts in GET /api/forge/preview so the cost
- * of letting knowledge in is visible rather than assumed. */
-const FORGE_KNOWLEDGE_DOTS = Math.max(0, Number(process.env.FORGE_KNOWLEDGE_DOTS || 8));
-const FORGE_KNOWLEDGE_CHARS = Math.max(120, Number(process.env.FORGE_KNOWLEDGE_CHARS || 360));
-const FORGE_KNOWLEDGE_INNOVATIONS = Math.max(0, Number(process.env.FORGE_KNOWLEDGE_INNOVATIONS || 4));
-const FORGE_KNOWLEDGE_LESSONS = Math.max(0, Number(process.env.FORGE_KNOWLEDGE_LESSONS || 4));
-// At most this many dots from any one domain, so the block stays cross-domain instead of
-// collapsing onto whichever domain happens to describe the wall in the same words.
-const FORGE_KNOWLEDGE_PER_DOMAIN = Math.max(1, Number(process.env.FORGE_KNOWLEDGE_PER_DOMAIN || 2));
-// How long a wall's cross-domain connect round stays fresh before the forge runs another
-// one for it (0 = never run one automatically; the button and stored rounds still work).
-const FORGE_INSIGHT_HOURS = Math.max(0, Number(process.env.FORGE_INSIGHT_HOURS || 72));
 const FORGET_DAYS = Number(process.env.FORGET_DAYS || 14);
 const CHECK_MIN = Number(process.env.CHECK_MIN || 30);   // daemon cycle interval
 const AUTO_HOURS = Number(process.env.AUTO_HOURS || 24); // min hours between auto-connections
@@ -398,17 +350,6 @@ function round2(x) {
   return Math.round(x * 100) / 100;
 }
 
-/* Fold a set of weighted votes into one signal in [-1, +1], or null when there is not a
- * single vote to fold — silence is not a bad review. Layer 6.8 scores the engine's own
- * rounds through this exact function, so "did this idea work?" and "did anyone use this
- * capability?" are answered on one scale with one rule about silence. */
-function weightedSignal(parts) {
-  const votes = (parts || []).filter((p) => p && Number.isFinite(p.w) && Number.isFinite(p.v) && p.w > 0);
-  if (!votes.length) return null;
-  const wsum = votes.reduce((n, p) => n + p.w, 0);
-  return clamp(votes.reduce((n, p) => n + p.w * p.v, 0) / wsum, -1, 1);
-}
-
 // Fold one connection's real-world result into a single signal in [-1, 1].
 // The user's own verdict outweighs the Evidence Agent's: they lived the result.
 // Returns null when nothing has ever come back — silence is not a bad review.
@@ -424,7 +365,9 @@ function connectionSignal(c) {
     const rating = Number(o.rating);
     if (Number.isFinite(rating) && rating >= 1 && rating <= 5) parts.push({ w: 2, v: (rating - 3) / 2 });
   }
-  return weightedSignal(parts);
+  if (!parts.length) return null;
+  const wsum = parts.reduce((n, p) => n + p.w, 0);
+  return clamp(parts.reduce((n, p) => n + p.w * p.v, 0) / wsum, -1, 1);
 }
 
 /* Layer 7: every dot now says where it came from. Four origins, one rule — anything the
@@ -460,12 +403,6 @@ function enrichDots(dots, connections) {
     let uses = 0;
     let lastTouched = new Date(d.created_at || now).getTime();
     const signals = [];
-    // Layer 6.9: the same tally, restricted to rounds where the engine was rewriting itself.
-    // A dot's ordinary value_score says "this helped an idea"; forge_score says "this helped
-    // the engine get past a wall in its own code" — the one claim this repository could never
-    // make before, because the forge never read it.
-    let forgeUses = 0;
-    const forgeSignals = [];
     for (const c of connections) {
       if ((c.selected_dots || []).some((sd) => sd.id === d.id)) {
         uses++;
@@ -473,15 +410,8 @@ function enrichDots(dots, connections) {
         if (t > lastTouched) lastTouched = t;
         const s = connectionSignal(c);
         if (s !== null) signals.push(s);
-        if (c.forge) {
-          forgeUses++;
-          if (s !== null) forgeSignals.push(s);
-        }
       }
     }
-    const forgeScore = forgeSignals.length
-      ? round2(forgeSignals.reduce((a, b) => a + b, 0) / forgeSignals.length)
-      : 0;
     const daysIdle = Math.max(0, Math.floor((now - lastTouched) / 86400000));
     const rarity = Math.round((daysIdle / (1 + uses)) * 100) / 100;
     // The dot's own track record: mean outcome of every connection it took part in.
@@ -511,11 +441,6 @@ function enrichDots(dots, connections) {
       value_score: valueScore,
       rated_uses: signals.length,
       attention_score: attention,
-      // Layer 6.9: has this dot ever helped the engine break one of its own walls?
-      forge_uses: forgeUses,
-      forge_rated_uses: forgeSignals.length,
-      forge_score: forgeScore,
-      forge_proven: forgeSignals.length > 0 && forgeScore >= 0.34,
       proven: valueScore >= 0.34 && signals.length > 0,
       dead_end: valueScore <= -0.34 && signals.length > 0,
       never_connected: uses === 0,
@@ -543,14 +468,8 @@ function lessonLine(c, signal) {
   return `${head}: ${bits.join(" · ")}${inv.why_new ? " · เหตุผลที่เคยอ้างว่าใหม่: " + String(inv.why_new).slice(0, 160) : ""}`;
 }
 
-function buildLessons(connections, limit = 8, { includeForge = false } = {}) {
-  // Layer 6.9 writes self-forge rounds into this same ledger so the dots they name can be
-  // scored by Layer 4.5. They are lessons about the engine, not about ideas, so they stay
-  // out of the connect prompt's lesson block by default — otherwise a run of forge rounds
-  // would crowd every real idea out of "what worked last time".
-  return (includeForge ? connections : (connections || []).filter((c) => !c.forge))
-    .slice(0, limit)
-    .map((c) => {
+function buildLessons(connections, limit = 8) {
+  return connections.slice(0, limit).map((c) => {
     const signal = connectionSignal(c);
     return {
       id: c.id,
@@ -1551,7 +1470,7 @@ async function distillKnowledge({ note = "", auto = false, state = null } = {}) 
 /* ================= Core operations (shared by HTTP + daemon) ================= */
 let busy = false;
 
-async function performConnection({ focus = "", dotIds = null, mustInclude = [], auto = false, wall = null } = {}) {
+async function performConnection({ focus = "", dotIds = null, mustInclude = [], auto = false } = {}) {
   const allDots = loadJson(DOTS_FILE, []);
   const connections = loadJson(CONN_FILE, []);
   const enriched = enrichDots(allDots, connections);
@@ -1594,10 +1513,6 @@ async function performConnection({ focus = "", dotIds = null, mustInclude = [], 
     model: MODEL,
     focus: focus || null,
     auto,
-    // Layer 6.9: a connect round can now be aimed at one of the engine's own walls. It is an
-    // ordinary connection in every other way — visible, ratable, and reusable — but it is
-    // stamped so the next forge round against that wall can find the pattern it produced.
-    wall: wall ? { id: wall.id, title: wall.title, category: wall.category || null } : null,
     revived_dots: mustInclude,
     selected_dots: (parsed.selected_dot_ids || [])
       .map((id) => allDots.find((d) => d.id === id))
@@ -1662,11 +1577,8 @@ async function harvestText(text, source, origin = ORIGIN.human) {
  * regression sweep over every endpoint that existed before the round.
  * ================================================================ */
 
-// Directories the forge must never treat as "itself": memory, output, incoming — and the
-// verifier, which audits the forge from outside. An exam-taker who may rewrite the
-// invigilator's instructions is not being examined, so verifier/ is out of reach by
-// construction: excluded from the editable set here, and restored byte-for-byte if touched.
-const SELF_SKIP_DIRS = new Set([".git", "node_modules", "data", "lab", "inbox", "evolution", "verifier"]);
+// Directories the forge must never treat as "itself": memory, output, incoming.
+const SELF_SKIP_DIRS = new Set([".git", "node_modules", "data", "lab", "inbox", "evolution"]);
 const SELF_EXT = new Set([".js", ".html", ".css", ".md", ".ps1", ".vbs", ".json", ".py", ".txt"]);
 let forging = false;
 
@@ -1710,12 +1622,6 @@ function readGuarded() {
   try {
     for (const f of fs.readdirSync(DATA_DIR)) {
       if (f.endsWith(".json")) g["data/" + f] = fs.readFileSync(path.join(DATA_DIR, f), "utf8");
-    }
-  } catch {}
-  // The auditor is guarded like memory: a round that edits its own invigilator is void.
-  try {
-    for (const f of fs.readdirSync(VERIFIER_DIR)) {
-      if (f.endsWith(".js")) g["verifier/" + f] = fs.readFileSync(path.join(VERIFIER_DIR, f), "utf8");
     }
   } catch {}
   return g;
@@ -2424,9 +2330,6 @@ function consolidationPlan(body = null) {
   const endpoints = endpointLedger();
   const suite = Object.keys(self).filter((rel) => /^selftest\/.+\.js$/.test(rel)).sort();
   const last = ledger.find((e) => e && e.mode === "consolidation" && e.verdict === "accepted" && !e.rolled_back) || null;
-  // Layer 6.8: growth is not the only debt. Capabilities the usage ledger says nobody ever
-  // called are proposed here as this round's targets, without anyone having to notice them.
-  const adoption = adoptionDebt();
   return {
     metrics: sizeMetrics(self),
     suite,
@@ -2434,17 +2337,9 @@ function consolidationPlan(body = null) {
     suite_cap: CONSOLIDATE_SUITE_MAX,
     endpoints,
     retirement_candidates: endpoints.endpoints.filter((e) => e.retirable).map((e) => e.endpoint),
-    adoption,
-    unused_capabilities: adoption.targets,
     rounds_since_consolidation: since,
     consolidate_every: CONSOLIDATE_EVERY,
-    due: (CONSOLIDATE_EVERY > 0 && since >= CONSOLIDATE_EVERY) || adoption.consolidation_due,
-    due_reason:
-      CONSOLIDATE_EVERY > 0 && since >= CONSOLIDATE_EVERY
-        ? `สะสมรอบขยายมา ${since}/${CONSOLIDATE_EVERY} รอบ`
-        : adoption.consolidation_due
-          ? `มีรอบที่ไม่มีใครเรียกเลยติดกัน ${adoption.unused_streak} รอบ (เกณฑ์ ${ADOPTION_STREAK})`
-          : null,
+    due: CONSOLIDATE_EVERY > 0 && since >= CONSOLIDATE_EVERY,
     last_consolidation: last ? { id: last.id, at: last.at, delta: last.delta || null } : null,
     shrink_keys: SHRINK_KEYS,
     no_growth_keys: NO_GROWTH_KEYS,
@@ -2477,24 +2372,6 @@ ${note ? `\nคำสั่งเพิ่มเติมจากเจ้า�
     plan.endpoints.young_ledger ? " ⚠ บันทึกยังใหม่มาก — ยังไม่ควรเชื่อว่า 0 ครั้งแปลว่าตายจริง ให้เลี่ยงการถอด endpoint ในรอบนี้" : ""
   }
 ${plan.endpoints.endpoints.map((e) => `  ${e.retired ? "🗑" : e.hits > 0 ? "✅" : "  "} ${e.endpoint} — ถูกเรียก ${e.hits} ครั้ง${e.last_hit ? ` (ล่าสุด ${e.last_hit})` : ""}${e.retirable ? " ← ถอดออกจาก sweep ได้" : ""}`).join("\n")}
-
-===== 📈 ความสามารถที่ระบบสร้างไว้แล้วไม่มีใครเรียกเลย (Layer 6.8 · เป้าหมายที่ระบบเสนอเอง) =====
-บันทึกการใช้งานให้คะแนนรอบขยายไปแล้ว ${(plan.adoption.counts || {}).scored || 0} รอบ · ถูกใช้จริง ${(plan.adoption.counts || {}).adopted || 0} · ไม่มีใครเรียกเลย ${(plan.adoption.counts || {}).unused || 0}${
-    plan.adoption.unused_streak ? ` · ไม่มีใครเรียกติดกัน ${plan.adoption.unused_streak} รอบ` : ""
-  }
-${
-    (plan.unused_capabilities || []).length
-      ? (plan.unused_capabilities || [])
-          .map(
-            (t) =>
-              `  · ${t.evo_id} (${String(t.at || "").slice(0, 10)}) — ${t.capability || "(ไม่ระบุ)"}\n` +
-              `    เส้นทางที่ประกาศไว้แต่ไม่มีใครเรียก: ${t.endpoints.join(", ") || "(ไม่มี)"} · ผ่านมา ${t.days} วัน`
-          )
-          .join("\n") +
-        `\nนี่คือรายการที่ควรพิจารณาก่อนอย่างอื่นในรอบนี้: มันคือของที่พิสูจน์แล้วว่า "ทำได้" และพิสูจน์แล้วด้วยว่า "ไม่มีใครใช้"` +
-        `\nแต่การยุบรวมยังต้องพิสูจน์ตามกติกาเดิมทุกข้อ — ถ้าคุณลบเส้นทางใด ต้องใส่ใน retire_endpoints และบันทึกการใช้งานต้องรับรองว่ามันถูกเรียก 0 ครั้งจริง`
-      : "  (ยังไม่มีความสามารถไหนที่บันทึกการใช้งานตัดสินว่าไม่มีใครเรียก — ยังไม่มีหนี้ก้อนนี้ให้จ่าย)"
-  }
 
 เส้นทางที่ระบบรับรองว่าถอดได้ตอนนี้: ${plan.retirement_candidates.join(", ") || "(ไม่มี)"}
 ถ้าคุณลบโค้ดของ endpoint ใด ต้องใส่ชื่อเส้นทางนั้นใน field "retire_endpoints" ด้วย
@@ -2529,8 +2406,7 @@ ${sourceBundle(promptBundle(body))}
 2. ห้ามแตะไฟล์นอกโฟลเดอร์โปรเจกต์นี้ · ห้ามเพิ่ม dependency ภายนอก
 3. ห้ามลบหรือแก้ไฟล์พิสูจน์ของรอบก่อนใน selftest/ (นั่นคือชุดทดสอบที่ค้ำระบบอยู่)
 4. ห้ามแก้กลไกตรวจสอบให้อ่อนลง: proveEvolution, proveConsolidation, runProof, regressionTest, bootServer,
-   materializeTree, consolidationVerdict, retireEndpoint, planRetirements, writeAttempted, attemptBudget,
-   recordEndpointHit, declareAdoption, adoptionRound, adoptionReport, weightedSignal, targetRanking
+   materializeTree, consolidationVerdict, retireEndpoint, planRetirements, writeAttempted, attemptBudget
 5. ห้ามแก้ evolution/deprecations.json หรือ evolution/endpoint-usage.json ด้วยมือ — เป็นบันทึกที่ระบบเขียนเอง
 6. ต้องเคารพ DOT_SELFTEST=1 (ห้ามเริ่ม daemon ห้ามเรียก AI ตอนบูต)
 7. ถ้าลบ endpoint ต้องอัปเดต public/index.html และ README.md ให้ตรงกัน — ห้ามเหลือปุ่มที่กดแล้ว 404
@@ -2549,278 +2425,6 @@ ${sourceBundle(promptBundle(body))}
   "how_to_verify": "<เจ้าของกดดูตรงไหนถึงจะเห็นว่าระบบเล็กลงแต่ยังทำงานเหมือนเดิม>",
   "next_consolidation": "<รอบยุบรวมถัดไปควรไปแตะอะไรต่อ>"
 }`;
-}
-
-/* ================= Layer 6.8: THE ADOPTION LEDGER =================
- * Every gate this engine has ever had returns its verdict in the same minute the code was
- * written: the proof file passes, the old tree fails it, the size metrics fall, the endpoint
- * answers 200. Not one of them asks whether the capability shipped twenty rounds ago was
- * ever *called*. The answer was already on disk the whole time — evolution/endpoint-usage.json
- * has counted every /api/* request since Layer 6.6 — but it was only ever read as a licence
- * to retire a route (retireEndpoint, planRetirements), never as a value signal. So the
- * engine could pile up capabilities that nobody has invoked even once and score every one of
- * them as progress. Layer 4.5 built a return path for *ideas*. The system itself had none.
- *
- * It has one now, and on purpose it is the same one:
- *
- *   an idea    Evidence verdict + what the owner did with it   ┐
- *   a round    did anyone call the routes it declared?         ┴→ weightedSignal() → [-1,+1]
- *
- * Three properties are what make this a feedback loop instead of one more instant verdict:
- *   · a round must DECLARE the routes its capability will be reached through (gate
- *     `declared_usage`) — otherwise the question is unanswerable later, which is exactly
- *     how every round before this one escaped it;
- *   · the answer is allowed to arrive LATE. Before ADOPTION_DAYS have passed, or before the
- *     ledger has observed ADOPTION_MIN_REQUESTS requests, an unused round scores `null`,
- *     not −1 — the same way an unrated connection scores null. A quiet week is not a verdict;
- *   · and then it flows BACK: rounds that came back unused are proposed as consolidation
- *     targets automatically, and a category's mean adoption bends targetRanking(), so the
- *     kind of wall that keeps producing things nobody touches stops being picked first.
- */
-const ADOPTION_RULE =
-  "รอบขยายหนึ่งรอบได้คะแนน 'ถูกใช้จริง' เมื่อ: (1) มันประกาศเส้นทางที่ความสามารถจะถูกเรียกผ่านไว้ตอนที่มันผ่านด่าน " +
-  `(2) เวลาผ่านไปอย่างน้อย ${ADOPTION_DAYS} วัน และบันทึกการใช้งานเห็นคำขอมาแล้วอย่างน้อย ${ADOPTION_MIN_REQUESTS} ครั้ง ` +
-  "(3) แล้วจึงเปิด evolution/endpoint-usage.json มาให้คะแนนด้วยสูตรเดียวกับ connectionSignal() — " +
-  "ก่อนถึงเกณฑ์ข้อ 2 ความเงียบให้คะแนน null ไม่ใช่ติดลบ · เส้นทางที่มีอยู่ก่อนรอบนั้นนับให้ก็ต่อเมื่อถูกเรียกหลังวันที่ประกาศ";
-
-// Every /api/* route this source tree actually dispatches, read out of the router itself.
-// Used to check a declaration against reality: a round may under-declare, it may not
-// declare a route it never wrote.
-function declaredApiPaths(body) {
-  const src = String((body && body["server.js"]) || "");
-  const found = new Set();
-  for (const m of src.matchAll(/p === "(\/api\/[A-Za-z0-9/_-]+)"/g)) found.add(m[1]);
-  return found;
-}
-
-/* What a round puts on the record about how its capability is supposed to be reached.
- * Two sources, deliberately: what the round *claims* (a promise it can be held to) and what
- * the diff actually added (which it cannot quietly omit). */
-function declareAdoption({ report, before, after, at }) {
-  const had = declaredApiPaths(before);
-  const now = declaredApiPaths(after);
-  const detected = [...now].filter((ep) => !had.has(ep)).sort();
-  const raw = (Array.isArray(report && report.usage_endpoints) ? report.usage_endpoints : [])
-    .map((x) => String(x || "").trim().split("?")[0])
-    .filter((x) => /^\/api\/[A-Za-z0-9/_-]+$/.test(x));
-  const claimed = [...new Set(raw.filter((ep) => now.has(ep)))].sort();
-  const at_iso = new Date(at || Date.now()).toISOString();
-  return {
-    endpoints: [...new Set([...claimed, ...detected])].sort(),
-    claimed,
-    detected,
-    // Named but absent from the router: kept visible instead of silently dropped.
-    ignored: [...new Set(raw.filter((ep) => !now.has(ep)))].sort(),
-    note: String((report && report.usage_note) || "").slice(0, 500),
-    declared_at: at_iso,
-    matures_at: new Date(new Date(at_iso).getTime() + ADOPTION_DAYS * 86400000).toISOString(),
-    grace_days: ADOPTION_DAYS,
-    min_requests: ADOPTION_MIN_REQUESTS,
-  };
-}
-
-/* One round's own return path. Pure — same inputs, same verdict — so the live ledger and
- * POST /api/adoption/dryrun can never disagree about what counts as used. */
-function adoptionRound(entry, usage, nowMs, observedRequests) {
-  const mode = (entry && entry.mode) || "expansion";
-  const report = (entry && entry.report) || {};
-  const base = {
-    evo_id: (entry && entry.id) || null,
-    at: (entry && entry.at) || null,
-    mode,
-    verdict: (entry && entry.verdict) || null,
-    limit: (entry && entry.limit) || null,
-    category: (entry && entry.limit && entry.limit.category) || null,
-    capability: String(report.new_capability || report.summary || "").slice(0, 300),
-    endpoints: [],
-    declared: 0,
-    used: 0,
-    hits: 0,
-    days: null,
-    mature: false,
-    signal: null,
-    status: "exempt",
-    why: "",
-  };
-  if (!entry || entry.verdict !== "accepted" || entry.rolled_back) {
-    return { ...base, why: "รอบที่ไม่ได้ถูกใช้จริง (ตกหรือถูกย้อนกลับ) — ไม่มีความสามารถให้ใครเรียก" };
-  }
-  if (mode === "consolidation") {
-    return { ...base, why: "รอบยุบรวมไม่ได้เพิ่มความสามารถ จึงไม่มีการใช้งานให้วัด" };
-  }
-  const decl = entry.adoption || null;
-  if (!decl) {
-    return {
-      ...base,
-      status: "undeclared",
-      why: "รอบนี้เกิดก่อน Layer 6.8 จึงไม่เคยประกาศเส้นทางที่ความสามารถของมันจะถูกใช้ผ่าน — วัดย้อนหลังไม่ได้อย่างซื่อสัตย์",
-    };
-  }
-  const declaredAt = new Date(decl.declared_at || entry.at).getTime();
-  const eps = (Array.isArray(decl.endpoints) ? decl.endpoints : []).map((ep) => {
-    const e = ((usage && usage.endpoints) || {})[ep] || null;
-    const hits = e && Number.isFinite(e.hits) ? e.hits : 0;
-    const last = (e && e.last_hit) || null;
-    const isNew = (decl.detected || []).includes(ep);
-    // A route that already existed only counts if it was called *after* this round declared
-    // it — otherwise a round could buy itself a passing score by pointing at /api/dots.
-    const fresh = isNew || Boolean(last && new Date(last).getTime() >= declaredAt);
-    return { endpoint: ep, hits, last_hit: last, new_route: isNew, used_since_declared: hits > 0 && fresh };
-  });
-  const used = eps.filter((e) => e.used_since_declared);
-  const hits = used.reduce((n, e) => n + e.hits, 0);
-  const days = round2(Math.max(0, (nowMs - declaredAt) / 86400000));
-  const mature = days >= ADOPTION_DAYS && observedRequests >= ADOPTION_MIN_REQUESTS;
-  const common = {
-    ...base,
-    endpoints: eps,
-    declared: eps.length,
-    used: used.length,
-    hits,
-    days,
-    mature,
-    matures_at: decl.matures_at || new Date(declaredAt + ADOPTION_DAYS * 86400000).toISOString(),
-    note: String(decl.note || "").slice(0, 300),
-  };
-  if (!eps.length) {
-    return { ...common, status: "unmeasurable", why: "รอบนี้ไม่ได้ประกาศเส้นทางไว้เลย จึงไม่มีทางรู้ว่ามีใครใช้" };
-  }
-  // Silence before maturity is not a verdict — exactly the rule connectionSignal() follows.
-  if (!hits && !mature) {
-    return {
-      ...common,
-      status: "pending",
-      why:
-        `ยังตัดสินไม่ได้ — ผ่านมา ${days}/${ADOPTION_DAYS} วัน` +
-        ` และบันทึกการใช้งานเห็นคำขอมาแล้ว ${observedRequests}/${ADOPTION_MIN_REQUESTS} ครั้ง`,
-    };
-  }
-  const coverage = used.length / eps.length;
-  return {
-    ...common,
-    signal: round2(
-      weightedSignal([
-        // Was it reached at all — the vote that matters most, weighted like the owner's own.
-        { w: 2, v: hits > 0 ? 1 : -1 },
-        // How much of what it declared is actually live.
-        { w: 1, v: coverage * 2 - 1 },
-        // Touched once, or genuinely in use.
-        { w: 1, v: clamp(hits / ADOPTION_FLUENT_HITS, 0, 1) * 2 - 1 },
-      ])
-    ),
-    status: hits > 0 ? "adopted" : "unused",
-    why:
-      hits > 0
-        ? `ถูกเรียกจริง ${hits} ครั้ง ผ่าน ${used.length}/${eps.length} เส้นทางที่ประกาศไว้`
-        : `ผ่านมา ${days} วันและบันทึกเห็นคำขอ ${observedRequests} ครั้ง แต่ไม่มีใครเรียกเส้นทางของความสามารถนี้เลยแม้ครั้งเดียว`,
-  };
-}
-
-// The whole ledger, scored. Pure over (ledger, usage, now) so it is dry-runnable.
-function adoptionReport(ledger, usage, { now = Date.now() } = {}) {
-  const nowMs = new Date(now).getTime() || Date.now();
-  const u = usage && typeof usage === "object" ? usage : {};
-  const eps = u.endpoints && typeof u.endpoints === "object" ? u.endpoints : {};
-  const observed = Object.values(eps).reduce((n, e) => n + (Number(e && e.hits) || 0), 0);
-  const startedAt = u.started_at || new Date(nowMs).toISOString();
-  const trackingHours = round2(Math.max(0, (nowMs - new Date(startedAt).getTime()) / 3600000));
-  const rounds = (Array.isArray(ledger) ? ledger : [])
-    .slice()
-    .sort((a, b) => new Date((b && b.at) || 0) - new Date((a && a.at) || 0))
-    .map((e) => adoptionRound(e, { endpoints: eps }, nowMs, observed));
-  const scored = rounds.filter((r) => r.signal !== null);
-  const of = (s) => rounds.filter((r) => r.status === s);
-  const unused = of("unused");
-  // "0 hit ติดกัน": how many of the most recently *scored* rounds came back unused in a row.
-  let streak = 0;
-  for (const r of scored) {
-    if (r.status === "unused") streak++;
-    else break;
-  }
-  const categories = {};
-  for (const r of scored) {
-    const cat = r.category || "unknown";
-    const c = (categories[cat] = categories[cat] || { rounds: 0, adopted: 0, unused: 0, sum: 0, signal: null });
-    c.rounds++;
-    c.sum += r.signal;
-    if (r.status === "adopted") c.adopted++;
-    if (r.status === "unused") c.unused++;
-  }
-  for (const c of Object.values(categories)) {
-    c.signal = round2(c.sum / c.rounds);
-    delete c.sum;
-  }
-  return {
-    now: new Date(nowMs).toISOString(),
-    tracking_since: startedAt,
-    tracking_hours: trackingHours,
-    young_ledger: trackingHours < 24,
-    observed_requests: observed,
-    grace_days: ADOPTION_DAYS,
-    min_requests: ADOPTION_MIN_REQUESTS,
-    fluent_hits: ADOPTION_FLUENT_HITS,
-    weight: ADOPTION_WEIGHT,
-    streak_trigger: ADOPTION_STREAK,
-    rounds,
-    counts: {
-      total: rounds.length,
-      scored: scored.length,
-      adopted: of("adopted").length,
-      unused: unused.length,
-      pending: of("pending").length,
-      undeclared: of("undeclared").length,
-      unmeasurable: of("unmeasurable").length,
-      exempt: of("exempt").length,
-    },
-    signal: scored.length ? round2(scored.reduce((n, r) => n + r.signal, 0) / scored.length) : null,
-    unused_streak: streak,
-    consolidation_due: streak >= ADOPTION_STREAK,
-    // The automatic proposal: capabilities the ledger says nobody reached.
-    consolidation_targets: unused.map((r) => ({
-      evo_id: r.evo_id,
-      at: r.at,
-      capability: r.capability,
-      limit: r.limit ? r.limit.title : null,
-      category: r.category,
-      endpoints: r.endpoints.map((e) => e.endpoint),
-      days: r.days,
-      signal: r.signal,
-    })),
-    categories,
-    rule: ADOPTION_RULE,
-  };
-}
-
-/* Category → mean adoption signal: the number that feeds back into which wall comes next.
- * Taken out of an already-computed report where there is one, so a single round never scores
- * the whole ledger twice. */
-function categoryOf(report) {
-  const out = {};
-  for (const [cat, c] of Object.entries((report && report.categories) || {})) {
-    if (c && c.rounds > 0 && Number.isFinite(c.signal)) out[cat] = c.signal;
-  }
-  return out;
-}
-function categoryAdoption(ledger, usage, now = Date.now()) {
-  return categoryOf(adoptionReport(ledger, usage, { now }));
-}
-
-// The live summary a consolidation round and the web page both read.
-function adoptionDebt() {
-  const r = adoptionReport(loadJson(EVO_FILE, []), loadUsage());
-  return {
-    signal: r.signal,
-    counts: r.counts,
-    unused_streak: r.unused_streak,
-    consolidation_due: r.consolidation_due,
-    targets: r.consolidation_targets,
-    categories: r.categories,
-    grace_days: r.grace_days,
-    min_requests: r.min_requests,
-    observed_requests: r.observed_requests,
-    young_ledger: r.young_ledger,
-    tracking_since: r.tracking_since,
-  };
 }
 
 /* ================= Layer 6.5: SCAR TISSUE =================
@@ -2846,9 +2450,6 @@ const GATE_LABEL = {
   changed: "ไม่มีไฟล์ใดถูกแก้จริง",
   guard: "แตะไฟล์ความทรงจำที่ห้ามแก้",
   proof_written: "ไม่ได้เขียนไฟล์พิสูจน์",
-  // Layer 6.8: a round that cannot say how its capability will be reached can never be
-  // asked, a week later, whether anyone reached it.
-  declared_usage: "ไม่ได้ประกาศเส้นทางที่ความสามารถใหม่จะถูกใช้ผ่าน",
   syntax: "syntax พัง",
   smoke: "บูตเซิร์ฟเวอร์ไม่ผ่าน",
   capability: "ความสามารถใหม่พิสูจน์ไม่ผ่าน",
@@ -3057,548 +2658,13 @@ function forgeHistory(limit, ledger) {
   return { budget, dossier, block: buildFailureBlock(dossier, budget) };
 }
 
-/* Who is next, and why — one place, so the daemon, the API and the forge agree on both the
- * ceiling and the feedback. Layer 6.8 adds the second term: a wall's own category record.
- * `unlock − risk/2` is the engine's *estimate* of what a wall is worth, made before anything
- * was built; the adoption term is what actually happened to the last things built there. A
- * category whose rounds nobody ever called loses up to ADOPTION_WEIGHT points, one whose
- * rounds are in daily use gains them. Categories with nothing scored yet contribute exactly
- * 0 — an unmeasured category is never punished for being unmeasured. */
-function targetRanking(limits, ledger, { adoption = null, usage = null, now = Date.now() } = {}) {
-  const cats = adoption || categoryAdoption(ledger, usage || loadUsage(), now);
-  return (limits || [])
-    .filter((l) => l.status !== "broken" && !attemptBudget(l, ledger).exhausted)
-    .map((l) => {
-      const base = round2(l.unlock_score - l.risk / 2);
-      const s = cats[l.category];
-      const adjust = Number.isFinite(s) ? round2(ADOPTION_WEIGHT * s) : 0;
-      return {
-        id: l.id,
-        title: l.title,
-        category: l.category,
-        base,
-        adoption_signal: Number.isFinite(s) ? s : null,
-        adoption_adjust: adjust,
-        score: round2(base + adjust),
-      };
-    })
-    // Ties fall back to the pre-Layer-6.8 order, so an engine with nothing scored yet
-    // behaves exactly as it did before this layer existed.
-    .sort((a, b) => b.score - a.score || b.base - a.base);
-}
-
-function selectTarget(limits, ledger, opts = {}) {
-  const top = targetRanking(limits, ledger, opts)[0];
-  return top ? (limits || []).find((l) => l.id === top.id) || null : null;
-}
-
-/* ================= Layer 6.9: THE SELF-CONNECTOR =================
- * The premise the entire system is built on is that a good answer comes from laying one
- * domain's structure over another's. Every layer honours it except the one that matters
- * most: buildForgePrompt() received three things — the wall, the failure history, and the
- * source code — and not one knowledge dot. Not one of the innovations the engine had
- * synthesised itself. Nothing from /api/lessons. So the layer that decides what this engine
- * becomes worked inside exactly one domain: its own source. And buildIntrospectPrompt(),
- * which did see the repository, saw only `d.title` — Kintsugi, memory immunity, queueing
- * theory arrived as a list of names with their contents stripped off, close enough to look
- * like knowledge was present while none of it could be used as material.
- *
- * Nobody removed the dots on purpose. The forge prompt was frightening enough already, so
- * adding anything to it read as self-harm — and the question that never got asked was the
- * other one: what should come *out* so that knowledge can come *in*.
- *
- * So this layer answers both halves.
- *
- *   what comes in    the dots most structurally relevant to this wall, WITH their content ·
- *                    the innovations the engine synthesised, with the hidden pattern each
- *                    one found · the lessons the return path already computes · and one
- *                    connect round aimed at the wall itself (focus = description +
- *                    why_it_stands), so the cross-domain machinery is pointed at the engine
- *   what comes out   nothing arbitrary — the block is *budgeted*: FORGE_KNOWLEDGE_DOTS dots
- *                    clipped to FORGE_KNOWLEDGE_CHARS each, at most
- *                    FORGE_KNOWLEDGE_PER_DOMAIN per domain. The repository can grow for
- *                    ever; this block cannot. GET /api/forge/preview reports the size of
- *                    every part of the prompt so the trade is a number, not a feeling.
- *
- * And then the part that makes it a loop rather than a decoration: the round must name the
- * dots whose principles it used (`used_dot_ids`). That claim is written back into
- * connections.json as a real connection, and the verdict of the gates becomes its outcome —
- * so Layer 4.5 scores those dots by whether the wall actually fell. A repository that only
- * ever accumulates is unfalsifiable; this is the first mechanism that can tell the engine a
- * piece of its own knowledge is worthless.
- */
-const FORGE_KNOWLEDGE_RULE =
-  "รอบหลอมตัวเองได้อ่านคลังความรู้ของตัวเองก่อนแตะโค้ด: จุดที่เกี่ยวกับกำแพงนี้ที่สุดพร้อม 'เนื้อหาจริง' " +
-  "(วัดความเกี่ยวด้วย 4-gram overlap ถ่วงด้วยลำดับความสนใจและประวัติการช่วยทำลายกำแพง · จำกัดโดเมนละไม่เกิน " +
-  `${FORGE_KNOWLEDGE_PER_DOMAIN} จุด) · นวัตกรรมที่ระบบเคยสังเคราะห์เองพร้อมรูปแบบที่ซ่อนอยู่ · บทเรียนจากเส้นตอบกลับ · ` +
-  "และรอบเชื่อมจุดที่เล็งกำแพงนี้โดยเฉพาะ (focus = description + why_it_stands) · " +
-  "แลกกับการที่บล็อกนี้มีเพดานตายตัว จึงไม่โตตามคลังไปเรื่อย ๆ · " +
-  "จากนั้นรอบนั้นต้องประกาศว่าใช้หลักการจากจุดไหน (used_dot_ids) คำประกาศถูกเขียนกลับเป็นการเชื่อมจุดจริง " +
-  "แล้วผลของด่านทั้งหมดกลายเป็น outcome ของมันตาม Layer 4.5 — จุดที่ถูกอ้างว่าช่วยแล้วกำแพงไม่ล้ม ถูกหักคะแนนเท่าไอเดียที่ตายแล้ว";
-
-function clipText(text, max) {
-  const s = String(text || "").replace(/\s+/g, " ").trim();
-  return s.length > max ? s.slice(0, max) + "…" : s;
-}
-
-// The wall, written as the focus of a connect round — exactly what the analysis prescribed:
-// description plus the reason it is still standing, which is usually where the structure
-// worth matching against another domain actually lives.
-function wallFocus(limit) {
-  const l = limit || {};
-  const head = `ทำลายกำแพงในโค้ดของระบบตัวเอง: ${clipText(l.title, 140) || "(ไม่ระบุ)"}`;
-  // The reason a wall is still standing is usually where the structure worth matching lives,
-  // so it is clipped *first* and the description gets whatever room is left — the other way
-  // round, a long description would silently push the "why" out of the focus entirely.
-  const why = l.why_it_stands ? `กำแพงนี้ยังอยู่เพราะ: ${clipText(l.why_it_stands, 170)}` : "";
-  const desc = clipText(l.description, Math.max(60, 450 - head.length - why.length));
-  return [head, desc, why].filter(Boolean).join(" · ");
-}
-
-/* Which dots stand a chance of being useful against this wall. The measure is the same
- * character 4-gram overlap Layer 6.5 uses to decide whether two failed rounds were really
- * the same approach, pointed at a wall instead of a round — Thai has no spaces to tokenise
- * on, so shingles are the one comparison in this codebase that works on both languages.
- *
- * Overlap alone would be self-defeating: it would only ever surface dots that describe the
- * wall in the wall's own words, which is the opposite of a cross-domain connection. So it is
- * bent by two things the engine already knows — the attention the return path assigned
- * (normalised, or a dot idle for 300 days would drown everything else out) and whether this
- * dot has helped break a wall before. Pure and deterministic: the same repository always
- * produces the same ranking, which is why it can be dry-run without an AI. */
-function wallRelevance(limit, dots) {
-  const l = limit || {};
-  const wall = shingles(
-    `${l.title || ""} ${l.description || ""} ${l.why_it_stands || ""} ${l.break_idea || ""} ${l.evidence || ""}`
+// One place decides who is next, so the daemon, the API and the forge agree on the ceiling.
+function selectTarget(limits, ledger) {
+  return (
+    (limits || [])
+      .filter((l) => l.status !== "broken" && !attemptBudget(l, ledger).exhausted)
+      .sort((a, b) => b.unlock_score - b.risk / 2 - (a.unlock_score - a.risk / 2))[0] || null
   );
-  const pool = Array.isArray(dots) ? dots : [];
-  // reduce, not Math.max(...spread): a repository of a few thousand dots would blow the
-  // argument limit, and this function has to survive the repository growing.
-  const maxAttention = pool.reduce((n, d) => Math.max(n, Number(d.attention_score) || 0), 1);
-  return pool
-    .map((d) => {
-      const overlap = wall.size ? round2(jaccard(wall, shingles(`${d.title || ""} ${String(d.content || "").slice(0, 900)}`))) : 0;
-      const attention = round2((Number(d.attention_score) || 0) / maxAttention);
-      const forge = Number(d.forge_score) || 0;
-      return {
-        ...d,
-        wall_overlap: overlap,
-        attention_norm: attention,
-        relevance: round2(3 * overlap + 0.6 * attention + 0.5 * forge),
-      };
-    })
-    .sort((a, b) => b.relevance - a.relevance || b.attention_score - a.attention_score);
-}
-
-// The budget, applied: take the most relevant dots but never let one domain fill the block,
-// because a block full of one domain is a block that cannot produce a cross-domain match.
-function pickForgeDots(ranked, { max = FORGE_KNOWLEDGE_DOTS, perDomain = FORGE_KNOWLEDGE_PER_DOMAIN } = {}) {
-  const picked = [];
-  const taken = new Set();
-  const perDomainCount = new Map();
-  for (const d of ranked) {
-    if (picked.length >= max) break;
-    const n = perDomainCount.get(d.domain) || 0;
-    if (n >= perDomain) continue;
-    perDomainCount.set(d.domain, n + 1);
-    taken.add(d.id);
-    picked.push(d);
-  }
-  // A repository with only one or two domains must still fill the block it was given.
-  for (const d of ranked) {
-    if (picked.length >= max) break;
-    if (!taken.has(d.id)) {
-      taken.add(d.id);
-      picked.push(d);
-    }
-  }
-  return picked;
-}
-
-// The innovations the engine synthesised for itself, best-scoring first, each carrying the
-// hidden pattern it claimed to see. This is the material Layer 6 never got: the engine's own
-// track record of structural matches, offered back to it as it rewrites its own structure.
-function forgeInnovations(connections, max = FORGE_KNOWLEDGE_INNOVATIONS) {
-  return (Array.isArray(connections) ? connections : [])
-    .filter((c) => c && c.innovation && c.innovation.name)
-    .map((c) => ({ c, signal: connectionSignal(c) }))
-    .sort((a, b) => (b.signal === null ? 0 : b.signal) - (a.signal === null ? 0 : a.signal))
-    .slice(0, max)
-    .map(({ c, signal }) => ({
-      id: c.id,
-      name: String(c.innovation.name).slice(0, 200),
-      at: c.created_at,
-      signal: signal === null ? null : round2(signal),
-      from_wall: c.wall ? c.wall.title : null,
-      dots: (c.selected_dots || []).map((d) => `${d.title} [${d.domain}]`),
-      hidden_pattern: clipText(c.hidden_pattern, 300),
-      connection: clipText(c.connection, 300),
-      why_new: clipText(c.innovation.why_new, 200),
-    }));
-}
-
-// The freshest connect round that was aimed at this particular wall, if there is one.
-function wallInsight(limit, connections, { maxAgeHours = FORGE_INSIGHT_HOURS } = {}) {
-  const l = limit || {};
-  if (!l.id) return null;
-  for (const c of Array.isArray(connections) ? connections : []) {
-    if (!c || !c.wall || c.wall.id !== l.id) continue;
-    const ageHours = round2(Math.max(0, (Date.now() - new Date(c.created_at).getTime()) / 3600000));
-    const signal = connectionSignal(c);
-    return {
-      connection: c.id,
-      at: c.created_at,
-      age_hours: ageHours,
-      stale: maxAgeHours > 0 && ageHours > maxAgeHours,
-      focus: c.focus || null,
-      auto: Boolean(c.auto),
-      hidden_pattern: clipText(c.hidden_pattern, 600),
-      connection_text: clipText(c.connection, 700),
-      innovation: c.innovation || {},
-      dots: (c.selected_dots || []).map((d) => ({ id: d.id, title: d.title, domain: d.domain })),
-      signal: signal === null ? null : round2(signal),
-    };
-  }
-  return null;
-}
-
-/* Everything a forge round is allowed to read about the repository, assembled. Pure over
- * (limit, dots, connections) so POST /api/forge/knowledge/dryrun exercises this exact
- * function with a hypothetical repository and cannot disagree with the real round. */
-function forgeKnowledge(limit, { dots = null, connections = null } = {}) {
-  const conns = Array.isArray(connections) ? connections : loadJson(CONN_FILE, []);
-  const raw = Array.isArray(dots) ? dots : loadJson(DOTS_FILE, []);
-  const enriched = enrichDots(raw, conns);
-  const ranked = wallRelevance(limit, enriched);
-  const picked = pickForgeDots(ranked);
-  return {
-    wall: limit
-      ? { id: limit.id, title: limit.title, category: limit.category, focus: wallFocus(limit) }
-      : null,
-    dots: picked.map((d) => ({
-      id: d.id,
-      title: d.title,
-      domain: d.domain,
-      content: clipText(d.content, FORGE_KNOWLEDGE_CHARS),
-      content_chars: String(d.content || "").length,
-      origin_label: d.origin_label,
-      relevance: d.relevance,
-      wall_overlap: d.wall_overlap,
-      attention_score: d.attention_score,
-      value_score: d.value_score,
-      rated_uses: d.rated_uses,
-      proven: d.proven,
-      dead_end: d.dead_end,
-      forge_uses: d.forge_uses,
-      forge_score: d.forge_score,
-      forge_proven: d.forge_proven,
-      absorbed_count: d.absorbed_count,
-    })),
-    // What was left out, named — the honest half of having a budget at all.
-    skipped_dots: Math.max(0, ranked.length - picked.length),
-    pool_dots: ranked.length,
-    domains: [...new Set(picked.map((d) => d.domain))],
-    innovations: forgeInnovations(conns),
-    lessons: buildLessons(conns, FORGE_KNOWLEDGE_LESSONS),
-    insight: wallInsight(limit, conns),
-    caps: {
-      dots: FORGE_KNOWLEDGE_DOTS,
-      dot_chars: FORGE_KNOWLEDGE_CHARS,
-      per_domain: FORGE_KNOWLEDGE_PER_DOMAIN,
-      innovations: FORGE_KNOWLEDGE_INNOVATIONS,
-      lessons: FORGE_KNOWLEDGE_LESSONS,
-      insight_hours: FORGE_INSIGHT_HOURS,
-    },
-    rule: FORGE_KNOWLEDGE_RULE,
-  };
-}
-
-// The block itself — bounded, and written so a round cannot mistake it for decoration.
-function buildKnowledgeBlock(brief) {
-  const b = brief || {};
-  const dots = b.dots || [];
-  const line = (d) =>
-    `- id: ${d.id} · [${d.domain}] ${d.title}\n` +
-    `  หลักการ: ${d.content || "(จุดนี้ไม่มีเนื้อหา)"}\n` +
-    `  ความเกี่ยวกับกำแพงนี้ ${d.relevance} (ทาบโครงสร้างตรงกัน ${d.wall_overlap})` +
-    ` · ลำดับความสนใจ ${d.attention_score}` +
-    (d.rated_uses ? ` · คะแนนคุณค่าจากผลลัพธ์จริง ${d.value_score > 0 ? "+" : ""}${d.value_score}` : "") +
-    (d.forge_uses
-      ? ` · เคยถูกอ้างในรอบหลอมตัวเอง ${d.forge_uses} ครั้ง คะแนน ${d.forge_score > 0 ? "+" : ""}${d.forge_score}` +
-        (d.forge_proven ? " (เคยช่วยทำลายกำแพงได้จริง)" : d.forge_score < 0 ? " (เคยถูกอ้างแล้วกำแพงไม่ล้ม)" : "")
-      : " · ยังไม่เคยถูกใช้ในรอบหลอมตัวเองเลย");
-  const inv = (i) =>
-    `- "${i.name}"${i.signal === null ? " (ยังไม่มีผลตอบกลับ)" : ` (สัญญาณ ${i.signal > 0 ? "+" : ""}${i.signal})`}` +
-    `${i.from_wall ? ` · เกิดจากรอบที่เล็งกำแพง "${i.from_wall}"` : ""}\n` +
-    `  จาก: ${i.dots.join(" + ") || "?"}\n` +
-    `  รูปแบบที่ซ่อนอยู่ที่มันเห็น: ${i.hidden_pattern || "(ไม่ระบุ)"}`;
-
-  const insight = b.insight
-    ? `--- 🎯 รอบเชื่อมจุดที่เล็งกำแพงนี้โดยเฉพาะ (${b.insight.at}${b.insight.stale ? " · เก่ากว่าเพดานความสดแล้ว" : ""}) ---
-โจทย์ที่ตั้งให้รอบนั้น: ${b.insight.focus || "(ไม่ระบุ)"}
-จุดที่มันเลือกมาเชื่อม: ${b.insight.dots.map((d) => `${d.title} [${d.domain}]`).join(" + ") || "(ไม่ระบุ)"}
-รูปแบบเชิงโครงสร้างที่มันเห็น: ${b.insight.hidden_pattern || "(ไม่ระบุ)"}
-การลากเส้นเชื่อม: ${b.insight.connection_text || "(ไม่ระบุ)"}
-สิ่งที่มันเสนอ: ${clipText(b.insight.innovation && b.insight.innovation.name, 200)} — ${clipText(
-        b.insight.innovation && b.insight.innovation.description,
-        400
-      )}
-⚠ นี่คือ "ข้อเสนอ" ไม่ใช่ "คำสั่ง": มันถูกเขียนโดยไม่ได้เห็นโค้ด คุณเห็นโค้ด ถ้าโครงสร้างที่มันทาบไม่เข้ากับของจริง ให้บอกออกมาตรง ๆ ว่าไม่เข้า`
-    : `--- 🎯 รอบเชื่อมจุดที่เล็งกำแพงนี้ ---
-ยังไม่มีรอบเชื่อมจุดที่เล็งกำแพงนี้ (สั่งได้เองที่ POST /api/forge/insight หรือปุ่ม "⚡ สั่งรอบเชื่อมจุดเล็งกำแพงนี้" บนหน้าเว็บ)
-รอบนี้จึงต้องทาบโครงสร้างด้วยตัวเองจากจุดความรู้ด้านล่าง`;
-
-  return `===== 🧠 หลักการข้ามโดเมนที่อาจใช้กับกำแพงนี้ (Layer 6.9 · คลังความรู้ของตัวคุณเอง) =====
-สมมติฐานที่ระบบทั้งระบบตั้งอยู่บนนั้นคือ "คำตอบที่ดีเกิดจากการทาบโครงสร้างข้ามโดเมน"
-แต่เดิมชั้นที่สำคัญที่สุดของมัน (ชั้นนี้) ทำงานในโดเมนเดียวคือซอร์สโค้ดของตัวเอง — บล็อกนี้คือการแก้ข้อนั้น
-คลังมี ${b.pool_dots || 0} จุด · เลือกมาให้คุณ ${dots.length} จุดจาก ${(b.domains || []).length} โดเมน (${(b.domains || []).join(" · ") || "-"})${
-    b.skipped_dots ? ` · ย่อทิ้ง ${b.skipped_dots} จุดที่เกี่ยวน้อยกว่า เพื่อไม่ให้บล็อกนี้โตตามคลังไปเรื่อย ๆ` : ""
-  }
-
---- 🔗 จุดความรู้ที่เกี่ยวกับกำแพงนี้ที่สุด (เนื้อหาจริง ไม่ใช่แค่ชื่อ) ---
-${dots.map(line).join("\n") || "(คลังยังว่าง — รอบนี้ไม่มีความรู้ข้ามโดเมนให้ใช้)"}
-
---- 💡 นวัตกรรมที่ระบบนี้เคยสังเคราะห์เอง (โครงสร้างที่มันเคยมองเห็น) ---
-${(b.innovations || []).map(inv).join("\n") || "(ยังไม่มี)"}
-
---- 🔁 บทเรียนจากเส้นตอบกลับ (Layer 4.5) ---
-${(b.lessons || []).map((l) => `- "${l.name}" → ${l.lesson}`).join("\n") || "(ยังไม่มี)"}
-
-${insight}
-
-⛔ ข้อบังคับของรอบนี้ที่มาจากชั้นนี้:
-1. ก่อนตัดสินใจว่าจะแก้โค้ดอย่างไร ให้ลองทาบ "หลักการ" ข้างบนกับรูปทรงของกำแพงนี้อย่างจริงจังก่อนหนึ่งรอบ
-   (เช่น กลไกที่มีลูปป้อนกลับ / การหาค่าเหมาะสม / การกระจายความเสี่ยง / การซ่อมที่ทำให้แข็งแรงขึ้น
-    มักมีรูปทรงเดียวกับปัญหาเชิงสถาปัตยกรรมในโค้ด) แล้วเลือกทางที่โครงสร้างเข้ากันจริง ไม่ใช่ที่ฟังดูเข้ากัน
-2. ใน JSON ที่คุณตอบกลับ ต้องมี "used_dot_ids" (array ของ id จุดที่คุณใช้หลักการของมันจริง — ใส่ [] ถ้าไม่ได้ใช้เลย)
-   และ "used_principle" (หลักการนั้นคืออะไร และคุณทาบมันกับกำแพงนี้อย่างไร — 1-3 ประโยค)
-3. คำประกาศนั้นเป็น "การเดิมพัน" ไม่ใช่พิธีกรรม: ระบบจะเขียนมันกลับเป็นการเชื่อมจุดจริงในคลัง
-   แล้วผลของด่านทั้งหมดในรอบนี้จะกลายเป็นผลลัพธ์ของการเชื่อมนั้นตาม Layer 4.5 —
-   รอบผ่าน = จุดเหล่านั้นได้คะแนนบวกเท่าไอเดียที่ถูกเอาไปทำจริง · รอบตก = ถูกหักเท่าไอเดียที่ตายแล้ว
-   ดังนั้น **ห้ามอ้างจุดที่ไม่ได้ใช้จริงเพื่อให้ดูดี** และ **ห้ามปิดบังจุดที่ใช้จริง** — คลังนี้จะเริ่มถูกพิสูจน์ด้วยรอบแบบนี้เท่านั้น
-4. ถ้าคลังไม่ได้ช่วยอะไรเลยจริง ๆ ให้ตอบ used_dot_ids เป็น [] แล้วอธิบายใน used_principle ว่าทำไมความรู้ที่มีจึงทาบกับกำแพงนี้ไม่ได้
-   — คำตอบแบบนั้นมีค่ากับระบบมากกว่าการอ้างจุดแบบขอไปที เพราะมันบอกว่าคลังยังขาดอะไร`;
-}
-
-/* ---- the return path of the knowledge itself (Layer 4.5, pointed at the forge) ---- */
-
-// A round's claim, checked against the repository as it stands. `used_dot_ids` that name
-// nothing real are reported, not silently dropped — the same way declareAdoption() reports
-// routes a round claimed but never wrote.
-function forgeFeedbackPlan(entry, dots) {
-  const report = (entry && entry.report) || {};
-  const byId = new Map((Array.isArray(dots) ? dots : []).map((d) => [d.id, d]));
-  const raw = [
-    ...new Set(
-      (Array.isArray(report.used_dot_ids) ? report.used_dot_ids : [])
-        .map((x) => String(x || "").trim())
-        .filter(Boolean)
-    ),
-  ];
-  const dotIds = raw.filter((id) => byId.has(id));
-  const accepted = entry && entry.verdict === "accepted" && !entry.rolled_back;
-  return {
-    declared: raw.length > 0,
-    claimed: raw,
-    dot_ids: dotIds,
-    // Named but not in the repository (deleted since, or invented). Kept visible.
-    missing: raw.filter((id) => !byId.has(id)),
-    dots: dotIds.map((id) => {
-      const d = byId.get(id);
-      return { id: d.id, title: d.title, domain: d.domain };
-    }),
-    principle: clipText(report.used_principle, 600),
-    verdict: (entry && entry.verdict) || null,
-    mode: (entry && entry.mode) || "expansion",
-    // The gates are the ground truth, so the outcome is written by them, not by a human:
-    // a round that passed every gate is a shipped idea; one that was rolled back is a dead one.
-    grade: accepted ? { status: "shipped", rating: 5 } : { status: "dead", rating: 1 },
-    applicable: (entry && entry.mode) !== "consolidation" && dotIds.length > 0,
-  };
-}
-
-// The claim, as an ordinary connection. Written into connections.json on purpose: that is
-// the one ledger enrichDots() reads, so this is what makes a forge round able to move a
-// dot's value_score at all — no second scoring system, no new formula.
-function forgeFeedbackRecord(entry, plan) {
-  const limit = (entry && entry.limit) || {};
-  const report = (entry && entry.report) || {};
-  const accepted = plan.grade.status === "shipped";
-  return {
-    id: "conn_forge_" + (entry && entry.id ? entry.id : crypto.randomBytes(4).toString("hex")),
-    created_at: (entry && entry.at) || new Date().toISOString(),
-    model: (entry && entry.model) || FORGE_MODEL,
-    focus: clipText(`ทำลายกำแพงของระบบตัวเอง: ${limit.title || ""}`, 300),
-    auto: true,
-    wall: { id: limit.id || null, title: limit.title || null, category: limit.category || null },
-    // Layer 6.9: this marker is what tells enrichDots() and the UI that the outcome below was
-    // written by the forge gates rather than by the owner.
-    forge: {
-      evo_id: (entry && entry.id) || null,
-      mode: plan.mode,
-      verdict: plan.verdict,
-      limit: { id: limit.id || null, title: limit.title || null, category: limit.category || null },
-      principle: plan.principle,
-      declared: plan.claimed,
-      missing: plan.missing,
-    },
-    revived_dots: [],
-    selected_dots: plan.dots,
-    hidden_pattern:
-      plan.principle ||
-      "รอบหลอมตัวเองอ้างว่าใช้หลักการจากจุดเหล่านี้ แต่ไม่ได้อธิบายว่าหลักการนั้นคืออะไร",
-    connection:
-      `รอบหลอมตัวเอง ${(entry && entry.id) || "?"} เล็งกำแพง "${limit.title || "?"}" ` +
-      `โดยอ้างว่าทาบหลักการจาก ${plan.dots.map((d) => `${d.title} [${d.domain}]`).join(" + ") || "?"} เข้ากับโค้ดของตัวเอง — ` +
-      (accepted
-        ? "และด่านทั้งหมดของรอบนั้นผ่าน จึงนับว่าหลักการนี้ทาบได้จริง"
-        : "แต่รอบนั้นตกและถูกย้อนกลับ จึงยังไม่มีหลักฐานว่าหลักการนี้ทาบได้จริง"),
-    innovation: {
-      name: (accepted ? "ทำลายกำแพงได้: " : "รอบที่ตกกับกำแพง: ") + (limit.title || "?"),
-      description: clipText(report.new_capability || report.summary, 500),
-      why_new: clipText(report.differs_from_previous || report.proof_explains, 400),
-      first_step: clipText(report.how_to_verify, 300),
-    },
-    evidence: null,
-    learned_from_last_round: "",
-    lessons_used: [],
-    outcome: {
-      rated_at: new Date().toISOString(),
-      rating: plan.grade.rating,
-      status: plan.grade.status,
-      note: accepted
-        ? `ด่านทั้งหมดของรอบหลอมตัวเองผ่าน (${clipText(entry && entry.reason, 240)}) — คะแนนนี้ถูกให้โดยด่านของระบบ ไม่ใช่โดยมนุษย์`
-        : `รอบหลอมตัวเองนี้ตกและถูกย้อนกลับ (${clipText(entry && entry.reason, 240)}) — คะแนนนี้ถูกให้โดยด่านของระบบ ไม่ใช่โดยมนุษย์`,
-    },
-  };
-}
-
-/* Write the bet down. Called *after* the verdict and after the gates are done with the
- * memory snapshot, because this is a deliberate write to data/ — during the gates the very
- * same write would (correctly) look like the forge tampering with its own memory. */
-function applyForgeFeedback(entry) {
-  const dots = loadJson(DOTS_FILE, []);
-  const plan = forgeFeedbackPlan(entry, dots);
-  if (!plan.applicable) return { applied: false, plan };
-  const record = forgeFeedbackRecord(entry, plan);
-  const connections = loadJson(CONN_FILE, []);
-  if (connections.some((c) => c && c.id === record.id)) return { applied: false, plan, duplicate: true };
-  connections.unshift(record);
-  saveJson(CONN_FILE, connections);
-  const ids = new Set(plan.dot_ids);
-  return {
-    applied: true,
-    plan,
-    connection: record.id,
-    signal: round2(connectionSignal(record)),
-    affected_dots: enrichDots(dots, connections)
-      .filter((d) => ids.has(d.id))
-      .map((d) => ({
-        id: d.id,
-        title: d.title,
-        value_score: d.value_score,
-        attention_score: d.attention_score,
-        forge_uses: d.forge_uses,
-        forge_score: d.forge_score,
-        forge_proven: d.forge_proven,
-      })),
-  };
-}
-
-// Which forge rounds put a bet on the repository and which never did. Rounds from before
-// this layer are reported as such rather than being scored retroactively — the same honesty
-// Layer 6.8 applies to rounds that never declared a route.
-function forgeFeedbackLedger(connections, ledger) {
-  const conns = Array.isArray(connections) ? connections : [];
-  const rounds = Array.isArray(ledger) ? ledger : [];
-  const byEvo = new Map();
-  for (const c of conns) if (c && c.forge && c.forge.evo_id) byEvo.set(c.forge.evo_id, c);
-  const declared = [];
-  const undeclared = [];
-  for (const e of rounds) {
-    if (!e || e.mode === "consolidation") continue;
-    const rec = byEvo.get(e.id);
-    if (rec) {
-      const signal = connectionSignal(rec);
-      declared.push({
-        evo_id: e.id,
-        at: e.at,
-        verdict: e.verdict,
-        limit: (e.limit && e.limit.title) || null,
-        connection: rec.id,
-        principle: clipText(rec.forge.principle, 300),
-        dots: (rec.selected_dots || []).map((d) => ({ id: d.id, title: d.title, domain: d.domain })),
-        missing: rec.forge.missing || [],
-        signal: signal === null ? null : round2(signal),
-      });
-    } else {
-      undeclared.push({
-        evo_id: e.id,
-        at: e.at,
-        verdict: e.verdict,
-        limit: (e.limit && e.limit.title) || null,
-        why: e.knowledge_used
-          ? "รอบนี้ได้อ่านคลังความรู้แล้ว แต่ไม่ได้ประกาศว่าใช้หลักการจากจุดไหน — คลังจึงยังไม่ถูกพิสูจน์ด้วยรอบนี้"
-          : "รอบนี้เกิดก่อน Layer 6.9 จึงไม่เคยได้อ่านคลังความรู้เลย — วัดย้อนหลังไม่ได้อย่างซื่อสัตย์",
-      });
-    }
-  }
-  return {
-    declared,
-    undeclared,
-    declared_rounds: declared.length,
-    undeclared_rounds: undeclared.length,
-    signal: declared.filter((d) => d.signal !== null).length
-      ? round2(
-          declared.filter((d) => d.signal !== null).reduce((n, d) => n + d.signal, 0) /
-            declared.filter((d) => d.signal !== null).length
-        )
-      : null,
-  };
-}
-
-// The live summary the header bar, /api/self and the knowledge panel all read.
-function forgeKnowledgeStatus() {
-  const conns = loadJson(CONN_FILE, []);
-  const dots = enrichDots(loadJson(DOTS_FILE, []), conns);
-  const ledger = forgeFeedbackLedger(conns, loadJson(EVO_FILE, []));
-  return {
-    dots: dots.length,
-    forge_scored_dots: dots.filter((d) => d.forge_rated_uses > 0).length,
-    forge_proven_dots: dots.filter((d) => d.forge_proven).length,
-    forge_dead_dots: dots.filter((d) => d.forge_rated_uses > 0 && d.forge_score <= -0.34).length,
-    declared_rounds: ledger.declared_rounds,
-    undeclared_rounds: ledger.undeclared_rounds,
-    signal: ledger.signal,
-    insight_rounds: conns.filter((c) => c && c.wall).length,
-    insight_hours: FORGE_INSIGHT_HOURS,
-    caps: {
-      dots: FORGE_KNOWLEDGE_DOTS,
-      dot_chars: FORGE_KNOWLEDGE_CHARS,
-      per_domain: FORGE_KNOWLEDGE_PER_DOMAIN,
-      innovations: FORGE_KNOWLEDGE_INNOVATIONS,
-      lessons: FORGE_KNOWLEDGE_LESSONS,
-    },
-  };
-}
-
-/* The one AI call this layer adds: a connect round whose focus *is* the wall. It runs before
- * the forge takes its memory snapshot, is skipped entirely under DOT_SELFTEST or
- * FORGE_INSIGHT_HOURS=0, reuses a fresh round rather than paying twice, and can never fail a
- * forge round — a wall is still breakable with the knowledge already on disk. */
-async function ensureWallInsight(limit, { force = false } = {}) {
-  const existing = wallInsight(limit, loadJson(CONN_FILE, []));
-  if (existing && !existing.stale && !force) return { insight: existing, ran: false, reason: "ใช้รอบที่ยังสดของกำแพงนี้ซ้ำ" };
-  if (SELFTEST) return { insight: existing, ran: false, reason: "โหมดทดสอบ: ไม่เรียก AI" };
-  if (FORGE_INSIGHT_HOURS <= 0 && !force) {
-    return { insight: existing, ran: false, reason: "ปิดรอบเชื่อมจุดอัตโนมัติไว้ (FORGE_INSIGHT_HOURS=0)" };
-  }
-  try {
-    const record = await performConnection({ focus: wallFocus(limit), wall: limit, auto: !force });
-    return { insight: wallInsight(limit, [record]), ran: true, connection: record.id };
-  } catch (e) {
-    return { insight: existing, ran: false, error: e.message };
-  }
 }
 
 /* ---- Layer 6 prompts ---- */
@@ -3606,40 +2672,6 @@ function sourceBundle(body) {
   return Object.entries(body)
     .map(([rel, content]) => `--- FILE: ${rel} (${content.split("\n").length} บรรทัด) ---\n${content}`)
     .join("\n\n");
-}
-
-/* The engine used to hand itself its entire source every round. That worked at 700 lines
- * and became the main cost at 6,000: a ~450 KB prompt to read before a single thought, growing
- * with every accepted round — the "the more it writes, the less of itself it can read" wall.
- * The forge holds Read/Grep/Glob, so a map plus on-demand reads buys the same context for a
- * fraction of the tokens. FORGE_BUNDLE=full restores the old behaviour for comparison.
- */
-const SYMBOL_RE =
-  /^\s*(?:(?:async\s+)?function\s+([A-Za-z0-9_$]+)|const\s+([A-Z][A-Z0-9_]+)\s*=|(?:.*\bp\s*===\s*"([^"]+)"))/;
-
-function symbolIndex(body) {
-  return Object.entries(body)
-    .map(([rel, content]) => {
-      const lines = content.split("\n");
-      const syms = [];
-      lines.forEach((line, i) => {
-        const m = SYMBOL_RE.exec(line);
-        const name = m && (m[1] || m[2] || (m[3] ? "route " + m[3] : null));
-        if (name) syms.push(`${name}:${i + 1}`);
-      });
-      return `--- ${rel} (${lines.length} บรรทัด) ---\n${syms.length ? syms.join("  ") : "(ไม่มีสัญลักษณ์ระดับบนสุด)"}`;
-    })
-    .join("\n\n");
-}
-
-function forgeBundle(body) {
-  if (FORGE_BUNDLE === "full") return sourceBundle(body);
-  return (
-    `นี่คือ "แผนที่" ซอร์สโค้ดของตัวคุณเอง ไม่ใช่ซอร์สเต็ม — รูปแบบ \`ชื่อสัญลักษณ์:เลขบรรทัด\`\n` +
-    `คุณมี Read / Grep / Glob อยู่ในมือ: **เปิดอ่านเฉพาะส่วนที่จะแก้จริง และต้องอ่านก่อนแก้ทุกครั้ง**\n` +
-    `ห้ามแก้ไฟล์ส่วนที่ยังไม่ได้อ่าน — แผนที่บอกได้แค่ว่าอะไรอยู่ที่ไหน ไม่ได้บอกว่ามันทำงานอย่างไร\n\n` +
-    symbolIndex(body)
-  );
 }
 
 // Past proof files are real source, but the bundle only needs the newest one as a worked example.
@@ -3652,50 +2684,6 @@ function promptBundle(body) {
     trimmed[rel] = content;
   }
   return trimmed;
-}
-
-/* Layer 6.9: introspection used to receive `dots.map(d => d.title)` — Kintsugi, memory
- * immunity, queueing theory arriving as a list of names with their mechanisms stripped off.
- * It looked like the repository was present while none of it could be used as material, which
- * is the most expensive kind of almost-right: the round that names the engine's walls was
- * asked to think across domains with the domains removed. Same budget shape as the forge
- * block — the head carries real content, the tail keeps its names so nothing disappears. */
-function introspectKnowledgeBlock(dots, connections) {
-  const conns = Array.isArray(connections) ? connections : [];
-  const ordered = [...enrichDots(Array.isArray(dots) ? dots : [], conns)].sort(
-    (a, b) => b.attention_score - a.attention_score
-  );
-  const full = ordered.slice(0, FORGE_KNOWLEDGE_DOTS * 2);
-  const rest = ordered.slice(full.length);
-  const innovations = forgeInnovations(conns, FORGE_KNOWLEDGE_INNOVATIONS * 2);
-  return `จุดความรู้ในคลัง ${ordered.length} จุด — ${full.length} จุดที่ลำดับความสนใจสูงสุดถูกส่งมาพร้อม "เนื้อหาจริง" ไม่ใช่แค่ชื่อ
-(ชั้นนี้เคยเห็นแค่ชื่อจุด คินสึงิ ภูมิคุ้มกันแบบจดจำ ทฤษฎีแถวคอย จึงเป็นได้แค่รายชื่อ ไม่เคยเป็นวัตถุดิบ — Layer 6.9 แก้ข้อนั้น):
-${
-    full
-      .map(
-        (d) =>
-          `- [${d.domain}] ${d.title}${d.proven ? " ✅ เคยให้ผลจริง" : d.dead_end ? " 📉 เคยพาไปทางตัน" : ""}${
-            d.forge_uses ? ` · เคยถูกใช้ในรอบหลอมตัวเอง ${d.forge_uses} ครั้ง (คะแนน ${d.forge_score})` : ""
-          }\n  หลักการ: ${clipText(d.content, FORGE_KNOWLEDGE_CHARS)}`
-      )
-      .join("\n") || "(ยังไม่มีจุดในคลัง)"
-  }
-${rest.length ? `\n(อีก ${rest.length} จุดที่ลำดับความสนใจต่ำกว่า ย่อเหลือชื่อเพื่อคุมขนาดพรอมป์ต: ${rest.map((d) => `${d.title} [${d.domain}]`).join(" · ")})` : ""}
-
-นวัตกรรมที่ระบบนี้เคยสังเคราะห์เอง พร้อม "รูปแบบเชิงโครงสร้าง" ที่มันเคยมองเห็น:
-${
-    innovations
-      .map(
-        (i) =>
-          `- "${i.name}"${i.signal === null ? "" : ` (สัญญาณ ${i.signal > 0 ? "+" : ""}${i.signal})`} จาก ${i.dots.join(" + ") || "?"}\n` +
-          `  รูปแบบที่ซ่อนอยู่: ${i.hidden_pattern || "(ไม่ระบุ)"}`
-      )
-      .join("\n") || "(ยังไม่มี)"
-  }
-
-⚠ วิธีใช้บล็อกนี้: กำแพงเชิงโครงสร้างของตัวเองมักมองเห็นได้ชัดที่สุดตอนเอา "หลักการ" ข้างบนไปทาบกับรูปทรงของโค้ดตัวเอง
-เช่น ถามว่ากลไกในโดเมนอื่นที่แก้ปัญหารูปทรงเดียวกันนี้ ทำอย่างไร แล้วโค้ดนี้ขาดอะไรไปเมื่อเทียบกับมัน
-ในแต่ละข้อที่คุณเสนอ ให้ break_idea อ้างอิงหลักการจากจุดข้างบนได้ถ้ามันเข้ากันจริง`;
 }
 
 function buildIntrospectPrompt(body, dots, connections, limits) {
@@ -3714,10 +2702,11 @@ function buildIntrospectPrompt(body, dots, connections, limits) {
 - สิ่งที่ระบบ "ไม่รู้ว่าตัวเองไม่รู้"
 
 ===== ซอร์สโค้ดของตัวคุณเอง =====
-${forgeBundle(promptBundle(body))}
+${sourceBundle(promptBundle(body))}
 
 ===== ความรู้ที่ระบบสะสมไว้ (ใช้เป็นวัตถุดิบเชื่อมจุดกับตัวเองได้) =====
-${introspectKnowledgeBlock(dots, connections)}
+จุดความรู้ (${dots.length}): ${dots.map((d) => `${d.title} [${d.domain}]`).join(" · ") || "(ยังไม่มี)"}
+นวัตกรรมที่ระบบเคยสร้าง: ${connections.map((c) => c.innovation && c.innovation.name).filter(Boolean).join(" · ") || "(ยังไม่มี)"}
 
 ===== ขอบเขตที่ถูกทำลายไปแล้ว (ห้ามเสนอซ้ำ) =====
 ${broken.map((l) => `- ${l.title}`).join("\n") || "(ยังไม่มี)"}
@@ -3746,60 +2735,9 @@ ${standing.map((l) => `- [${l.id}] ${l.title}`).join("\n") || "(ยังไม�
 }`;
 }
 
-/* Layer 6.8: the block that tells a round what happened to the last things this engine
- * built — and that it will be asked the same question about itself in a week. */
-function buildAdoptionBlock(limit, debt, rank = null) {
-  const c = debt.counts || {};
-  const cat = (debt.categories || {})[limit && limit.category] || null;
-  const targets = (debt.targets || []).slice(0, 6);
-  return `===== 📈 เส้นตอบกลับของตัวระบบเอง (Layer 6.8 · ของที่รอบก่อน ๆ สร้างไว้ มีใครใช้บ้าง) =====
-ทุกด่านของรอบนี้ตัดสินภายในวันนี้ แต่มีอีกด่านหนึ่งที่จะมาถึงทีหลัง: อีก ${debt.grace_days} วันข้างหน้า
-ระบบจะเปิด evolution/endpoint-usage.json ขึ้นมาถามว่า "เส้นทางที่รอบนี้ประกาศไว้ มีใครเรียกจริงไหม"
-แล้วให้คะแนนด้วยสูตรเดียวกับที่ใช้ให้คะแนนไอเดียของผู้ใช้ (weightedSignal) — รอบที่ได้ 0 ครั้งจะถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง
-(ความเงียบก่อนครบ ${debt.grace_days} วัน หรือก่อนที่บันทึกจะเห็นคำขอครบ ${debt.min_requests} ครั้ง ยังไม่นับเป็นคำตัดสิน — ตอนนี้เห็นมาแล้ว ${debt.observed_requests} ครั้ง)
-
-สภาพตอนนี้: ให้คะแนนได้แล้ว ${c.scored || 0} รอบ · ถูกใช้จริง ${c.adopted || 0} · ไม่มีใครเรียกเลย ${c.unused || 0} · ยังรอเวลา ${c.pending || 0} · เกิดก่อนชั้นนี้จึงวัดไม่ได้ ${c.undeclared || 0}
-คะแนนการถูกใช้จริงเฉลี่ยของทั้งระบบ: ${debt.signal === null ? "ยังไม่มีรอบไหนถูกให้คะแนน" : debt.signal}
-${
-    cat
-      ? `หมวด "${limit.category}" ของกำแพงนี้: คะแนน ${cat.signal} (ถูกใช้ ${cat.adopted}/${cat.rounds} รอบ)` +
-        (rank
-          ? ` → ลำดับความคุ้มของกำแพงนี้ถูกปรับจาก ${rank.base} เป็น ${rank.score} เพราะประวัติการถูกใช้ของหมวดนี้`
-          : "")
-      : `หมวด "${limit ? limit.category : "?"}" ยังไม่มีรอบไหนถูกให้คะแนน จึงยังไม่มีการปรับลำดับความคุ้มของกำแพงนี้`
-  }
-${
-    targets.length
-      ? `\n⚠ ความสามารถที่ระบบสร้างไว้แล้วไม่มีใครเรียกเลย (ระบบเสนอเป็นเป้าหมายของรอบยุบรวมเองแล้ว):\n` +
-        targets
-          .map(
-            (t) =>
-              `  · ${t.evo_id} (${String(t.at || "").slice(0, 10)}) — ${t.capability || "(ไม่ระบุความสามารถ)"}\n` +
-              `    เส้นทางที่ประกาศไว้: ${t.endpoints.join(", ") || "(ไม่มี)"} · ผ่านมา ${t.days} วัน ยังไม่มีใครเรียก`
-          )
-          .join("\n") +
-        `\nอ่านรายการนี้ก่อนลงมือ: ถ้าสิ่งที่คุณกำลังจะสร้างมีรูปทรงเดียวกับของที่ไม่มีใครเรียกด้านบน ให้เปลี่ยนแนวทาง` +
-        ` — ความสามารถที่ต้องรอให้มนุษย์ไปหาปุ่มเจอเอง คือความสามารถที่ประวัติบอกแล้วว่าจะไม่ถูกเรียก`
-      : ""
-  }
-
-⛔ ข้อบังคับของรอบนี้ที่มาจากชั้นนี้:
-1. ใน JSON ที่คุณตอบกลับ ต้องมี "usage_endpoints" (เส้นทางที่จะถูกเรียก) และ "usage_note" (ใครจะเรียกมันผ่านอะไร)
-   "usage_endpoints" คือเส้นทาง /api/... ที่ความสามารถใหม่นี้จะถูกใช้ผ่านจริง อย่างน้อยหนึ่งเส้น
-   และต้องมีอยู่จริงในโค้ดใหม่ (ระบบตรวจกับ router เอง เส้นที่ไม่มีอยู่จริงจะถูกทิ้งและถูกบันทึกไว้ว่าคุณอ้างเกิน)
-   ถ้ารอบนี้ไม่ได้เพิ่มเส้นทางใหม่เลย ให้ประกาศเส้นทางเดิมที่ความสามารถนี้ไหลผ่าน — แต่เส้นทางเดิมจะนับให้ก็ต่อเมื่อถูกเรียก *หลัง* รอบนี้
-   ไม่ประกาศเลย = ตกด่าน "${GATE_LABEL.declared_usage}" และถูกย้อนกลับทั้งรอบ
-2. ต่อ UI ให้ความสามารถใหม่ถูกเรียกได้จริงจากหน้าเว็บ ไม่ใช่แค่มี endpoint — เส้นทางที่ไม่มีใครกดถึงจะได้ 0 ครั้งแน่นอน`;
-}
-
-function buildForgePrompt(limit, body, evoId, history = null, debt = null, rank = null, knowledge = null) {
+function buildForgePrompt(limit, body, evoId, history = null) {
   const hist = history || { budget: attemptBudget(limit, []), dossier: [], block: "" };
   const block = hist.block || buildFailureBlock(hist.dossier || [], hist.budget);
-  const adoptionBlock = buildAdoptionBlock(limit, debt || adoptionDebt(), rank);
-  // Layer 6.9: the block this prompt spent its whole life without. It goes at the head, before
-  // the scars and before the source, because a round that has already decided how it will
-  // patch server.js will not go looking for another domain's structure afterwards.
-  const knowledgeBlock = buildKnowledgeBlock(knowledge || forgeKnowledge(limit));
   return `คุณคือ "The Self-Forge" — ชั้นที่ 6 ของ The Dot-Connector AI
 คุณกำลังจะแก้ไข *ซอร์สโค้ดของตัวคุณเอง* ที่รันอยู่จริงบนเครื่องผู้ใช้ ในโฟลเดอร์ปัจจุบัน (cwd)
 
@@ -3811,14 +2749,10 @@ function buildForgePrompt(limit, body, evoId, history = null, debt = null, rank 
 ทำไมมันยังอยู่: ${limit.why_it_stands}
 แนวทางทำลายที่ระบบวิเคราะห์ตัวเองไว้: ${limit.break_idea}
 
-${knowledgeBlock}
-
 ${block}
 
-${adoptionBlock}
-
 ===== ซอร์สโค้ดปัจจุบันของคุณ =====
-${forgeBundle(promptBundle(body))}
+${sourceBundle(promptBundle(body))}
 
 ===== วิธีทำงาน =====
 ใช้เครื่องมือ Read / Edit / Write / Glob / Grep แก้ไฟล์จริงในโฟลเดอร์นี้ให้เสร็จสมบูรณ์
@@ -3873,13 +2807,6 @@ ${forgeBundle(promptBundle(body))}
     — โดยเฉพาะห้ามทำให้ลูปของ Layer 6.7 ข้ามด่านใดด่านหนึ่งในเทิร์นหลัง ๆ: ทุกเทิร์นต้องรันด่านครบทั้งชุดเสมอ
 11. ห้ามแก้กลไกความจำของความล้มเหลวให้อ่อนลงเพื่อซื้อโอกาสให้ตัวเอง
     (writeAttempted, failureDossier, attemptBudget, selectTarget, buildFailureBlock) และห้ามลบโฟลเดอร์ attempted/ ของรอบก่อน
-12. ห้ามแก้กลไกวัดการถูกใช้จริงให้อ่อนลง (recordEndpointHit, loadUsage, declareAdoption, adoptionRound,
-    adoptionReport, weightedSignal, targetRanking) และห้ามแก้ evolution/endpoint-usage.json ด้วยมือ
-    — นี่คือด่านเดียวของระบบที่ตัดสินหลังรอบนี้จบไปแล้ว การทำให้มันอ่อนลงคือการปิดตาตัวเองเรื่องคุณค่าของงานตัวเอง
-13. ห้ามแก้กลไกที่ทำให้คลังความรู้ถูกพิสูจน์ได้ให้อ่อนลง (forgeKnowledge, wallRelevance, buildKnowledgeBlock,
-    forgeFeedbackPlan, forgeFeedbackRecord, applyForgeFeedback, introspectKnowledgeBlock)
-    — โดยเฉพาะห้ามทำให้การประกาศ used_dot_ids กลายเป็นสิ่งที่ไม่มีผลอะไรกับคะแนนของจุด
-    เพราะกลไกนี้คือทางเดียวที่ระบบจะรู้ได้ว่าความรู้ในคลังของมันช่วยอะไรจริงหรือเปล่า
 
 เมื่อแก้เสร็จแล้ว ให้ตอบกลับเป็น JSON ล้วนเท่านั้นในข้อความสุดท้าย (ห้ามมีข้อความอื่นนอก JSON) ทุก field เป็นภาษาไทย:
 {
@@ -3888,10 +2815,6 @@ ${forgeBundle(promptBundle(body))}
   "differs_from_previous": "<รอบนี้ต่างจากรอบที่เคยตกกับกำแพงนี้อย่างไร ทั้งไฟล์ที่แตะและกลไกที่ใช้ — ถ้าเป็นครั้งแรกให้บอกว่ายังไม่มีรอบก่อน>",
   "what_changed": ["<ไฟล์: สิ่งที่แก้ไปแบบรูปธรรม>"],
   "new_capability": "<ตอนนี้ระบบทำอะไรได้ที่เมื่อวานทำไม่ได้ — 1-2 ประโยค พูดให้ผู้ใช้เข้าใจทันที>",
-  "used_dot_ids": ["<id ของจุดความรู้ที่คุณใช้หลักการของมันจริงในรอบนี้ — [] ถ้าคลังไม่ได้ช่วยเลย>"],
-  "used_principle": "<หลักการข้ามโดเมนที่คุณหยิบมาใช้คืออะไร และคุณทาบมันกับกำแพงนี้อย่างไร — 1-3 ประโยค (ถ้า used_dot_ids ว่าง ให้อธิบายว่าทำไมความรู้ที่มีทาบไม่ได้)>",
-  "usage_endpoints": ["<เส้นทาง /api/... ที่ความสามารถใหม่นี้จะถูกเรียกผ่านจริง — อย่างน้อยหนึ่งเส้น และต้องมีอยู่จริงในโค้ดใหม่>"],
-  "usage_note": "<ใครจะเรียกเส้นทางเหล่านั้น ผ่านปุ่มไหนหรือกลไกไหน และเมื่อไหร่ — นี่คือคำสัญญาที่อีก ${ADOPTION_DAYS} วันระบบจะเอามาเทียบกับบันทึกการใช้งานจริง>",
   "proof_file": "selftest/${evoId}.js",
   "proof_explains": "<ไฟล์พิสูจน์นี้ทดสอบอะไร และทำไมโค้ดเดิมถึงต้องตกการทดสอบนี้ — 1-2 ประโยค>",
   "how_to_verify": "<ผู้ใช้กดอะไรตรงไหนถึงจะเห็นความสามารถใหม่นี้ด้วยตาตัวเอง>",
@@ -4020,29 +2943,6 @@ async function runForgeGates({ evoId, before, guarded, consolidating, report }) 
     fs.mkdirSync(path.join(EVO_DIR, "backups", evoId), { recursive: true });
     fs.writeFileSync(path.join(EVO_DIR, "backups", evoId, "proof.js"), after[proofRel], "utf8");
   } catch {}
-
-  /* Layer 6.8: shipping includes saying how the thing will be reached. Satisfied by either
-     half of the declaration — a route the diff added, or an existing route the round names
-     as the path its capability flows through — so no honest round can be blocked by it, and
-     no round can slip through leaving the question unanswerable. */
-  const declaration = declareAdoption({ report, before, after, at: new Date().toISOString() });
-  out.adoption = declaration;
-  if (!consolidating) {
-    if (!declaration.endpoints.length) {
-      return fail(
-        "declared_usage",
-        "ไม่ได้ประกาศเส้นทางที่ความสามารถใหม่จะถูกใช้ผ่าน — รอบนี้จึงถูกถามภายหลังไม่ได้ว่ามีใครใช้",
-        `รอบนี้ไม่ได้เพิ่มเส้นทาง /api/* ใหม่ในโค้ด และ field "usage_endpoints" ที่คุณตอบมาก็ว่างเปล่าหรือชี้ไปที่เส้นทางที่ไม่มีอยู่จริง` +
-          (declaration.ignored.length ? ` (เส้นที่อ้างมาแต่ไม่มีใน router: ${declaration.ignored.join(", ")})` : "") +
-          ' · ใส่เส้นทางที่ความสามารถนี้จะถูกเรียกผ่านลงใน "usage_endpoints" อย่างน้อยหนึ่งเส้น'
-      );
-    }
-    checks.declared_usage = true;
-    checks.declared_usage_detail =
-      `ประกาศไว้ ${declaration.endpoints.length} เส้น: ${declaration.endpoints.join(", ")}` +
-      ` (เส้นทางใหม่จากโค้ดจริง ${declaration.detected.length} · ที่รอบนี้อ้างเอง ${declaration.claimed.length})` +
-      ` — อีก ${ADOPTION_DAYS} วันบันทึกการใช้งานจะเป็นผู้ตัดสินว่ามีใครเรียกจริงไหม`;
-  }
 
   const syn = await syntaxCheck();
   checks.syntax = syn.ok;
@@ -4192,15 +3092,10 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
   const consolidating = mode === "consolidation";
   const evoId = "evo_" + crypto.randomBytes(4).toString("hex");
   const before = readSelf();
+  const guarded = readGuarded();
   const ledger = loadJson(EVO_FILE, []);
   let limits = loadJson(LIMITS_FILE, []);
   let retirePlan = { requested: [], approved: [], refused: [] };
-  /* Layer 6.9: the memory snapshot has to be taken *after* the two steps that are allowed to
-   * write to data/ on purpose — introspect() saving limits.json when no wall is on record, and
-   * the cross-domain connect round this layer runs before the forge starts. Snapshotting first
-   * (as this function used to) would make both of them look like the forge tampering with its
-   * own memory and fail the guard gate on the very first turn. */
-  let guarded = {};
 
   try {
     // 1. Pick what this round is aimed at. An expansion round picks the boundary worth
@@ -4210,13 +3105,6 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
     let history = null;
     let plan = null;
     let prompt = "";
-    let knowledge = null;
-    let insightRun = null;
-    // Layer 6.8: what the usage ledger currently says about everything already built. Read
-    // once here so the choice of target, the prompt and the ledger entry all quote the
-    // same numbers.
-    const debt = adoptionDebt();
-    let rank = null;
     if (consolidating) {
       plan = consolidationPlan(before);
       prompt = buildConsolidationPrompt(evoId, plan, before, note);
@@ -4225,26 +3113,16 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
         await introspect();
         limits = loadJson(LIMITS_FILE, []);
       }
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(debt) });
-      target = limitId ? limits.find((l) => l.id === limitId) : selectTarget(limits, ledger, { adoption: categoryOf(debt) });
+      target = limitId ? limits.find((l) => l.id === limitId) : selectTarget(limits, ledger);
       if (!target) {
         throw Object.assign(new Error("ไม่มีขอบเขตที่รอทำลายอยู่ — กด \"วิเคราะห์ขอบเขตตัวเอง\" ก่อน"), { status: 400 });
       }
-      rank = ranking.find((r) => r.id === target.id) || null;
       // 2. Hand this round every scar the wall has left: why each past attempt fell, at which
       //    gate, and where its rejected code is still readable. Attempt #2 must not be #1 again.
       history = forgeHistory(target, ledger);
-      // 2.5 Layer 6.9 — and hand it the repository. First point the cross-domain machinery at
-      //     the wall itself (focus = description + why_it_stands), reusing a fresh round rather
-      //     than paying for a second one; a failure here is never fatal, it just means this
-      //     round works from the knowledge already on disk.
-      insightRun = await ensureWallInsight(target);
-      knowledge = forgeKnowledge(target);
-      prompt = buildForgePrompt(target, before, evoId, history, debt, rank, knowledge);
+      prompt = buildForgePrompt(target, before, evoId, history);
     }
 
-    // Everything above was allowed to write to data/. From here on, nothing is.
-    guarded = readGuarded();
     fs.mkdirSync(PROOF_DIR, { recursive: true });
 
     // 3. Layer 6.7 — the round is a closed loop now. The model answers, every gate runs
@@ -4376,58 +3254,10 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
             distinct_approaches: history.budget.distinct_approaches,
           }
         : null,
-      // Layer 6.9: what the repository actually put in front of this round — recorded so the
-      // claim it makes below (used_dot_ids) can be checked against what it was allowed to see.
-      knowledge_used: knowledge
-        ? {
-            dots: knowledge.dots.map((d) => ({
-              id: d.id,
-              title: d.title,
-              domain: d.domain,
-              relevance: d.relevance,
-              forge_score: d.forge_score,
-            })),
-            domains: knowledge.domains,
-            pool_dots: knowledge.pool_dots,
-            skipped_dots: knowledge.skipped_dots,
-            innovations: knowledge.innovations.map((i) => i.name),
-            lessons: knowledge.lessons.map((l) => l.id),
-            insight: knowledge.insight
-              ? {
-                  connection: knowledge.insight.connection,
-                  at: knowledge.insight.at,
-                  ran_now: Boolean(insightRun && insightRun.ran),
-                  focus: knowledge.insight.focus,
-                  hidden_pattern: knowledge.insight.hidden_pattern,
-                }
-              : null,
-            insight_note: insightRun ? insightRun.reason || insightRun.error || null : null,
-            block_chars: buildKnowledgeBlock(knowledge).length,
-            caps: knowledge.caps,
-          }
-        : null,
       verdict: "rejected",
       reason: "",
     };
     if (retryError) entry.retry_error = retryError;
-    if (!consolidating) {
-      // Layer 6.8: the promise this round is held to, recomputed against the round's own
-      // timestamp so declared_at and matures_at line up exactly with the ledger entry.
-      entry.adoption = declareAdoption({ report, before, after, at: entry.at });
-      // ...and the feedback that was in play when this wall was chosen, kept for audit:
-      // it is the only way to check later whether the loop actually changed a decision.
-      entry.adoption_used = {
-        system_signal: debt.signal,
-        category: target.category,
-        category_signal: (debt.categories[target.category] || {}).signal ?? null,
-        base_score: rank ? rank.base : null,
-        adjusted_score: rank ? rank.score : null,
-        adoption_adjust: rank ? rank.adoption_adjust : 0,
-        unused_streak: debt.unused_streak,
-        unused_rounds: (debt.targets || []).map((t) => t.evo_id),
-        observed_requests: debt.observed_requests,
-      };
-    }
     if (consolidating) {
       entry.plan_before = plan ? plan.metrics : null;
       if (gateRun) {
@@ -4464,51 +3294,6 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
 
     // 5. Bookkeeping — and feed the win back into its own knowledge base.
     const state = loadState();
-
-    /* 5.0 Layer 6.9 — settle the bet this round placed on the repository. The gates are done
-     *     with the memory snapshot, so a deliberate write to data/ is finally safe, and the
-     *     verdict that just landed is exactly the outcome Layer 4.5 wants: a round that broke
-     *     the wall scores the dots it named like an idea that shipped, a round that was rolled
-     *     back scores them like an idea that died. This runs for failed rounds too — that is
-     *     the whole point. A repository that is only ever credited can never be corrected. */
-    // Wrapped: this is bookkeeping about the *previous* verdict, so a disk error here must
-    // never be the thing that stops a round that already passed from reaching the ledger.
-    let fb = null;
-    try {
-      if (!consolidating) fb = applyForgeFeedback(entry);
-    } catch (e) {
-      entry.knowledge_feedback = { applied: false, error: e.message };
-      slog(state, "🧠 เขียนเส้นตอบกลับของคลังความรู้ไม่สำเร็จ (ไม่กระทบคำตัดสินของรอบนี้): " + e.message);
-    }
-    if (fb) {
-      entry.knowledge_feedback = {
-        applied: fb.applied,
-        declared: fb.plan.declared,
-        dot_ids: fb.plan.dot_ids,
-        missing: fb.plan.missing,
-        principle: fb.plan.principle,
-        connection: fb.connection || null,
-        signal: fb.signal ?? null,
-        grade: fb.plan.grade,
-        affected_dots: fb.affected_dots || [],
-      };
-      if (fb.applied) {
-        slog(
-          state,
-          `🧠 รอบนี้ประกาศว่าใช้หลักการจาก ${fb.plan.dot_ids.length} จุด ` +
-            `(${fb.affected_dots.map((d) => `${d.title} → คุณค่า ${d.value_score > 0 ? "+" : ""}${d.value_score}`).join(" · ")}) — ` +
-            `ผลของรอบนี้ (${entry.verdict}) ถูกป้อนกลับเป็นคะแนนของจุดเหล่านั้นแล้วตาม Layer 4.5` +
-            (fb.plan.missing.length ? ` · อ้าง id ที่ไม่มีในคลัง: ${fb.plan.missing.join(", ")}` : "")
-        );
-      } else if (knowledge) {
-        slog(
-          state,
-          `🧠 รอบนี้ได้อ่านคลังความรู้ ${knowledge.dots.length} จุด แต่ไม่ได้ประกาศว่าใช้หลักการจากจุดไหน — ` +
-            `คลังจึงยังไม่ถูกพิสูจน์ด้วยรอบนี้` +
-            (fb.plan.missing.length ? ` (อ้าง id ที่ไม่มีในคลัง: ${fb.plan.missing.join(", ")})` : "")
-        );
-      }
-    }
     if (entry.verdict === "accepted" && consolidating) {
       // Only now do the certified-dead endpoints actually leave the sweep — and only the
       // ones the ledger approved, each recorded with the round that retired it.
@@ -4555,14 +3340,6 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
       state.last_evolution = entry.at;
       state.restart_required = true;
       slog(state, `🔥 ทำลายขอบเขต "${target.title}" สำเร็จ (${changes.length} ไฟล์) — รีสตาร์ตเพื่อใช้โค้ดใหม่`);
-      // Layer 6.8: the round is accepted, but not yet judged. Say out loud what it will be
-      // judged on, and when — so "accepted" stops sounding like the end of the story.
-      slog(
-        state,
-        `📈 รอบนี้ประกาศเส้นทางที่ความสามารถจะถูกใช้ผ่านไว้ ${entry.adoption.endpoints.length} เส้น ` +
-          `(${entry.adoption.endpoints.join(", ") || "-"}) — ` +
-          `อีก ${ADOPTION_DAYS} วัน (${String(entry.adoption.matures_at).slice(0, 10)}) บันทึกการใช้งานจะเป็นผู้ตัดสินว่ามีใครเรียกจริงไหม`
-      );
 
       // The evolution becomes a dot: the system now knows something new about itself.
       if (report.new_capability) {
@@ -4787,21 +3564,10 @@ async function serendipityCycle(forceConnect = false) {
         // Layer 6.6: growth now carries a debt. After CONSOLIDATE_EVERY accepted rounds the
         // engine owes itself a round that only makes it smaller — otherwise every schedule
         // tick spends context it will never get back.
-        const grown = CONSOLIDATE_EVERY > 0 && roundsSinceConsolidation(evoLedger) >= CONSOLIDATE_EVERY;
-        // Layer 6.8: and so does building things nobody uses. A run of rounds the usage
-        // ledger scored as unused schedules the consolidation round by itself, with those
-        // rounds already named as its targets — no human has to notice.
-        const unusedDebt = adoptionDebt();
-        const owed = grown || unusedDebt.consolidation_due;
+        const owed = CONSOLIDATE_EVERY > 0 && roundsSinceConsolidation(evoLedger) >= CONSOLIDATE_EVERY;
         let evo;
         if (owed) {
-          slog(
-            state,
-            grown
-              ? `Self-Forge: สะสมรอบขยายมา ${roundsSinceConsolidation(evoLedger)} รอบ — รอบนี้เป็นรอบยุบรวม`
-              : `Self-Forge: มีรอบที่ไม่มีใครเรียกเลยติดกัน ${unusedDebt.unused_streak} รอบ ` +
-                  `(${(unusedDebt.targets || []).map((t) => t.evo_id).join(", ")}) — รอบนี้เป็นรอบยุบรวมโดยอัตโนมัติ`
-          );
+          slog(state, `Self-Forge: สะสมรอบขยายมา ${roundsSinceConsolidation(evoLedger)} รอบ — รอบนี้เป็นรอบยุบรวม`);
           evo = await attemptEvolution({ auto: true, mode: "consolidation" });
         } else {
           const standing = loadJson(LIMITS_FILE, []).filter(
@@ -5200,22 +3966,6 @@ const server = http.createServer(async (req, res) => {
         },
         rounds_since_consolidation: roundsSinceConsolidation(loadJson(EVO_FILE, [])),
         consolidate_every: CONSOLIDATE_EVERY,
-        // Layer 6.9: ...and whether its own knowledge base is being used at all when it
-        // rewrites itself — which is a different question from whether users use the result.
-        self_connector: forgeKnowledgeStatus(),
-        // Layer 6.8: the engine can see whether anything it built is being used at all.
-        adoption: (() => {
-          const d = adoptionDebt();
-          return {
-            signal: d.signal,
-            counts: d.counts,
-            unused_streak: d.unused_streak,
-            consolidation_due: d.consolidation_due,
-            grace_days: d.grace_days,
-            min_requests: d.min_requests,
-            observed_requests: d.observed_requests,
-          };
-        })(),
       });
     }
 
@@ -5277,73 +4027,19 @@ const server = http.createServer(async (req, res) => {
         sweeping: r.sweeping,
       });
     }
-    /* ---- Layer 6.8: The Adoption Ledger — the engine's own return path ---- */
-    // Was any of this used? Every accepted expansion round, the routes it declared, the hits
-    // those routes actually took, and the score that flows back into what gets built next.
-    if (p === "/api/adoption" && req.method === "GET") {
-      const ledger = loadJson(EVO_FILE, []);
-      const limits = loadJson(LIMITS_FILE, []);
-      const report = adoptionReport(ledger, loadUsage());
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(report) });
-      return sendJson(res, 200, {
-        ...report,
-        // The feedback loop closing, as a table: estimate, correction, order.
-        ranking,
-        next_target: ranking.length ? ranking[0] : null,
-        adoption_weight: ADOPTION_WEIGHT,
-        note:
-          "ทุกรอบขยายประกาศเส้นทางที่ความสามารถของมันจะถูกใช้ผ่านไว้ตอนที่มันผ่านด่าน " +
-          "แล้วบันทึกการใช้งานจริง (evolution/endpoint-usage.json) เป็นผู้ตัดสินทีหลังด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของผู้ใช้ — " +
-          "รอบที่ไม่มีใครเรียกถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และคะแนนของหมวดนั้นถูกป้อนกลับเข้าการเลือกกำแพงถัดไป",
-      });
-    }
-    // The same scoring function, called with a hypothetical ledger, hypothetical usage and a
-    // hypothetical clock. No AI, no writes, offline: this is how "would a round with zero
-    // hits be down-ranked?" can be checked without waiting a week for it to happen.
-    if (p === "/api/adoption/dryrun" && req.method === "POST") {
-      const body = await readBody(req);
-      const rounds = Array.isArray(body.rounds) ? body.rounds : Array.isArray(body.ledger) ? body.ledger : [];
-      const usage = body.usage && typeof body.usage === "object" ? body.usage : { endpoints: {} };
-      const now = body.now ? new Date(body.now).getTime() : Date.now();
-      if (!Number.isFinite(now)) return sendJson(res, 400, { error: "now ต้องเป็นเวลาที่อ่านได้" });
-      const report = adoptionReport(rounds, usage, { now });
-      const limits = Array.isArray(body.limits) ? body.limits : null;
-      const ranking = limits ? targetRanking(limits, rounds, { adoption: categoryOf(report), now }) : null;
-      return sendJson(res, 200, {
-        ...report,
-        ranking,
-        next_target: ranking && ranking.length ? ranking[0] : null,
-        note:
-          "นี่คือ adoptionRound()/adoptionReport()/targetRanking() ตัวจริงที่ระบบใช้ตัดสิน — " +
-          "ต่างกันแค่บันทึกและนาฬิกาถูกแทนด้วยของสมมติ จึงตรวจเองได้ว่ากรณีไหนถูกนับว่าถูกใช้ กรณีไหนถูกนับว่าไม่มีใครใช้",
-      });
-    }
-
     // Every wall now carries its own attempt budget: how many tries it has had, how many
     // the ceiling allows *right now*, and how it earned the ones above the base of three.
     if (p === "/api/limits" && req.method === "GET") {
       const limits = loadJson(LIMITS_FILE, []);
       const ledger = loadJson(EVO_FILE, []);
-      // Layer 6.8: the ranking each wall is judged by now carries its category's own record
-      // of whether anything built there was ever called.
-      const report = adoptionReport(ledger, loadUsage());
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(report) });
-      const rankOf = new Map(ranking.map((r) => [r.id, r]));
-      const next = ranking.length ? limits.find((l) => l.id === ranking[0].id) || null : null;
+      const next = selectTarget(limits, ledger);
       return sendJson(
         res,
         200,
         limits.map((l) => {
           const b = attemptBudget(l, ledger);
-          const r = rankOf.get(l.id) || null;
-          const cat = report.categories[l.category] || null;
           return {
             ...l,
-            category_adoption: cat ? { ...cat, category: l.category } : null,
-            adoption_signal: r ? r.adoption_signal : null,
-            adoption_adjust: r ? r.adoption_adjust : 0,
-            priority_base: r ? r.base : round2(l.unlock_score - l.risk / 2),
-            priority_score: r ? r.score : null,
             attempts_used: b.attempts,
             attempt_cap: b.cap,
             attempts_left: b.left,
@@ -5372,14 +4068,7 @@ const server = http.createServer(async (req, res) => {
       const limits = loadJson(LIMITS_FILE, []);
       const ledger = loadJson(EVO_FILE, []);
       const wanted = String(url.searchParams.get("limitId") || "");
-      // Layer 6.8: read the usage ledger once, then let the target, the ranking and the
-      // prompt all quote that one reading — a preview that disagreed with itself would be
-      // worse than no preview.
-      const debt = adoptionDebt();
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(debt) });
-      const target = wanted
-        ? limits.find((l) => l.id === wanted)
-        : (ranking.length && limits.find((l) => l.id === ranking[0].id)) || null;
+      const target = wanted ? limits.find((l) => l.id === wanted) : selectTarget(limits, ledger);
       if (wanted && !target) return sendJson(res, 404, { error: "ไม่พบขอบเขตนี้" });
       if (!target) {
         return sendJson(res, 200, {
@@ -5390,16 +4079,9 @@ const server = http.createServer(async (req, res) => {
         });
       }
       const hist = forgeHistory(target, ledger);
-      const rank = ranking.find((r) => r.id === target.id) || null;
-      // Layer 6.9: the knowledge block is part of this prompt now, so the preview must build
-      // the same one the round will read — and report what every part of the prompt costs, so
-      // "letting knowledge in makes the prompt bigger" is a number the owner can see.
-      const brief = forgeKnowledge(target);
-      const knowledgeBlock = buildKnowledgeBlock(brief);
-      const prompt = buildForgePrompt(target, readSelf(), "evo_<รอบถัดไป>", hist, debt, rank, brief);
+      const prompt = buildForgePrompt(target, readSelf(), "evo_<รอบถัดไป>", hist);
       const marker = "===== ซอร์สโค้ดปัจจุบันของคุณ =====";
       const cut = prompt.indexOf(marker);
-      const adoptionBlock = buildAdoptionBlock(target, debt, rank);
       return sendJson(res, 200, {
         target: {
           id: target.id,
@@ -5414,27 +4096,6 @@ const server = http.createServer(async (req, res) => {
         blocked: target.status !== "broken" && hist.budget.exhausted,
         history: hist.dossier,
         failure_block: hist.block,
-        // Layer 6.8: and the other block — what the usage ledger says about what already exists.
-        adoption: {
-          ...debt,
-          rank,
-          block: buildAdoptionBlock(target, debt, rank),
-        },
-        // Layer 6.9: ...and the block that finally makes this a cross-domain round.
-        knowledge: {
-          ...brief,
-          block: knowledgeBlock,
-          block_chars: knowledgeBlock.length,
-        },
-        // What each part of the prompt costs. The wall this round breaks was held in place by
-        // "the forge prompt is frightening enough already" — a fear that was never a number.
-        prompt_parts: {
-          knowledge_block: knowledgeBlock.length,
-          failure_block: hist.block.length,
-          adoption_block: adoptionBlock.length,
-          source_bundle: sourceBundle(promptBundle(readSelf())).length,
-          total: prompt.length,
-        },
         // The prompt minus the source bundle — the part where the lessons actually live.
         prompt_head: cut > 0 ? prompt.slice(0, cut) : prompt,
         prompt_chars: prompt.length,
@@ -5518,173 +4179,6 @@ const server = http.createServer(async (req, res) => {
           "— ข้อความใน prompt_received จึงเป็นข้อความจริงที่โมเดลจะได้อ่านกลางรอบ",
       });
     }
-    /* ---- Layer 6.9: The Self-Connector — the knowledge a forge round finally gets to read ---- */
-    // Exactly what will be in front of the next round: the dots (with their contents), the
-    // innovations the engine synthesised, the lessons, the connect round aimed at this wall —
-    // and the scoreboard of which dots have actually helped break walls.
-    if (p === "/api/forge/knowledge" && req.method === "GET") {
-      const dots = loadJson(DOTS_FILE, []);
-      const conns = loadJson(CONN_FILE, []);
-      const limits = loadJson(LIMITS_FILE, []);
-      const ledger = loadJson(EVO_FILE, []);
-      const wanted = String(url.searchParams.get("limitId") || "");
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(adoptionDebt()) });
-      const target = wanted
-        ? limits.find((l) => l.id === wanted)
-        : (ranking.length && limits.find((l) => l.id === ranking[0].id)) || null;
-      if (wanted && !target) return sendJson(res, 404, { error: "ไม่พบขอบเขตนี้" });
-      const brief = forgeKnowledge(target, { dots, connections: conns });
-      const block = buildKnowledgeBlock(brief);
-      const introspect = introspectKnowledgeBlock(dots, conns);
-      const enriched = enrichDots(dots, conns);
-      return sendJson(res, 200, {
-        target: target
-          ? { id: target.id, title: target.title, category: target.category, status: target.status }
-          : null,
-        // With no wall on record the block is still meaningful — it just ranks by attention
-        // alone, which is what the introspection round will read anyway.
-        message: target ? null : "ยังไม่มีกำแพงที่รอทำลาย — บล็อกนี้จึงถูกจัดลำดับด้วยลำดับความสนใจล้วน",
-        ...brief,
-        block,
-        block_chars: block.length,
-        // The other half of the same wall: the introspection round used to see titles only.
-        introspect_knowledge: introspect,
-        introspect_chars: introspect.length,
-        insight_focus: target ? wallFocus(target) : null,
-        // Which rounds bet on the repository, and which never said anything.
-        feedback: forgeFeedbackLedger(conns, ledger),
-        // The repository being judged by whether it helped: a dot that was named by a round
-        // that failed carries a negative score here, in the same units as an idea that died.
-        dot_scoreboard: enriched
-          .filter((d) => d.forge_uses > 0)
-          .sort((a, b) => b.forge_score - a.forge_score || b.forge_uses - a.forge_uses)
-          .map((d) => ({
-            id: d.id,
-            title: d.title,
-            domain: d.domain,
-            forge_uses: d.forge_uses,
-            forge_score: d.forge_score,
-            forge_proven: d.forge_proven,
-            value_score: d.value_score,
-            attention_score: d.attention_score,
-          })),
-        status: forgeKnowledgeStatus(),
-        note:
-          "เดิม buildForgePrompt() ได้รับแค่ตัวขอบเขต ประวัติความล้มเหลว และซอร์สโค้ด — ไม่มีจุดความรู้แม้แต่จุดเดียว " +
-          "ทั้งที่ทั้งระบบตั้งอยู่บนสมมติฐานว่าคำตอบที่ดีเกิดจากการทาบโครงสร้างข้ามโดเมน · " +
-          "บล็อกด้านบนคือสิ่งที่รอบถัดไปจะได้อ่านจริง และมีเพดานตายตัวจึงไม่โตตามคลังไปเรื่อย ๆ",
-      });
-    }
-    // The same functions, called with a hypothetical wall, repository and round: which dots
-    // would be picked and why, and what one round's declaration would do to their scores.
-    // No AI, no writes — the feedback loop can be checked without spending a forge round.
-    if (p === "/api/forge/knowledge/dryrun" && req.method === "POST") {
-      const body = await readBody(req);
-      const limit = body.limit && typeof body.limit === "object" ? body.limit : null;
-      const dots = Array.isArray(body.dots) ? body.dots : loadJson(DOTS_FILE, []);
-      const conns = Array.isArray(body.connections) ? body.connections : loadJson(CONN_FILE, []);
-      const brief = forgeKnowledge(limit, { dots, connections: conns });
-      const block = buildKnowledgeBlock(brief);
-      const enrichedBefore = enrichDots(dots, conns);
-      let feedback = null;
-      if (body.round && typeof body.round === "object") {
-        const plan = forgeFeedbackPlan(body.round, dots);
-        const record = plan.applicable ? forgeFeedbackRecord(body.round, plan) : null;
-        const enrichedAfter = enrichDots(dots, record ? [record, ...conns] : conns);
-        const pick = (rows, id) => rows.find((x) => x.id === id) || {};
-        feedback = {
-          plan,
-          signal: record ? round2(connectionSignal(record)) : null,
-          would_write: record
-            ? {
-                id: record.id,
-                selected_dots: record.selected_dots,
-                outcome: record.outcome,
-                hidden_pattern: record.hidden_pattern,
-                innovation: record.innovation.name,
-                forge: record.forge,
-              }
-            : null,
-          // The loop, as numbers: what naming a dot does to that dot.
-          moves: plan.dot_ids.map((id) => {
-            const b = pick(enrichedBefore, id);
-            const a = pick(enrichedAfter, id);
-            return {
-              id,
-              title: a.title || b.title || null,
-              value_before: b.value_score ?? null,
-              value_after: a.value_score ?? null,
-              forge_uses_before: b.forge_uses ?? 0,
-              forge_uses_after: a.forge_uses ?? 0,
-              forge_score_before: b.forge_score ?? 0,
-              forge_score_after: a.forge_score ?? 0,
-              attention_before: b.attention_score ?? null,
-              attention_after: a.attention_score ?? null,
-              proven_after: Boolean(a.proven),
-              dead_end_after: Boolean(a.dead_end),
-            };
-          }),
-        };
-      }
-      return sendJson(res, 200, {
-        // The ranking in full, so the ordering itself can be checked rather than trusted.
-        ranking: wallRelevance(limit, enrichedBefore).map((d) => ({
-          id: d.id,
-          title: d.title,
-          domain: d.domain,
-          relevance: d.relevance,
-          wall_overlap: d.wall_overlap,
-          attention_norm: d.attention_norm,
-          forge_score: d.forge_score,
-        })),
-        brief,
-        block,
-        block_chars: block.length,
-        feedback,
-        caps: brief.caps,
-        rule: FORGE_KNOWLEDGE_RULE,
-        note:
-          "นี่คือ forgeKnowledge()/wallRelevance()/forgeFeedbackPlan()/forgeFeedbackRecord() ตัวจริงที่รอบหลอมตัวเองใช้ " +
-          "ต่างกันแค่คลังความรู้ กำแพง และรอบถูกแทนด้วยของสมมติ — จึงตรวจได้ทันทีว่าจุดไหนจะถูกเลือกเพราะอะไร " +
-          "และการที่รอบหนึ่งอ้างว่าใช้จุดไหน ทำให้คะแนนของจุดนั้นขยับไปทางไหนจริง",
-      });
-    }
-    // Point the cross-domain machinery at one of the engine's own walls, on demand: a real
-    // connect round whose focus is the wall's description plus the reason it still stands.
-    if (p === "/api/forge/insight" && req.method === "POST") {
-      if (SELFTEST) return sendJson(res, 503, { error: "โหมดทดสอบ: รอบเชื่อมจุดเล็งกำแพงไม่เรียก AI" });
-      if (forging) return sendJson(res, 409, { error: "Self-Forge กำลังทำงานอยู่ — รอรอบหลอมตัวเองให้จบก่อน" });
-      const body = await readBody(req);
-      const limits = loadJson(LIMITS_FILE, []);
-      const ledger = loadJson(EVO_FILE, []);
-      const wanted = String(body.limitId || "");
-      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(adoptionDebt()) });
-      const target = wanted
-        ? limits.find((l) => l.id === wanted)
-        : (ranking.length && limits.find((l) => l.id === ranking[0].id)) || null;
-      if (!target) {
-        return sendJson(res, 400, { error: "ไม่พบกำแพงที่จะเล็ง — กด \"วิเคราะห์ขอบเขตตัวเอง\" ก่อน" });
-      }
-      try {
-        const run = await ensureWallInsight(target, { force: true });
-        if (!run.insight) {
-          return sendJson(res, 502, { error: run.error || "รอบเชื่อมจุดเล็งกำแพงนี้ไม่สำเร็จ" });
-        }
-        return sendJson(res, 200, {
-          wall: { id: target.id, title: target.title, category: target.category },
-          focus: wallFocus(target),
-          ran: run.ran,
-          connection: run.connection || run.insight.connection,
-          insight: run.insight,
-          note:
-            "รอบนี้ถูกเก็บเป็นการเชื่อมจุดปกติในคลัง (ให้คะแนนผลลัพธ์จริงได้เหมือนไอเดียอื่น) " +
-            "และรอบหลอมตัวเองครั้งถัดไปที่เล็งกำแพงนี้จะได้อ่านรูปแบบที่ซ่อนอยู่ของมันในหัวพรอมป์ต",
-        });
-      } catch (e) {
-        return sendJson(res, e.status || 500, { error: e.message });
-      }
-    }
-
     // The code a rejected round wrote, still readable after the tree was rolled back.
     if (p === "/api/evolution/attempted" && req.method === "GET") {
       const evoId = String(url.searchParams.get("evoId") || "");
@@ -5991,7 +4485,6 @@ server.listen(PORT, () => {
   console.log(`  evolve:  ${EVOLVE_HOURS > 0 ? `every ${EVOLVE_HOURS}h (EVOLVE_HOURS=0 to disable)` : "off"}`);
   console.log(`  scout:   ${SCOUT_HOURS > 0 ? `every ${SCOUT_HOURS}h via ${SCOUT_MODEL} (SCOUT_HOURS=0 to disable)` : "off"} — evidence harvest always on`);
   console.log(`  distill: ${DISTILL_HOURS > 0 ? `every ${DISTILL_HOURS}h (DISTILL_HOURS=0 to disable)` : "off"} — connect prompt capped at ${CONNECT_FULL_DOTS} full dots`);
-  console.log(`  adopt:   rounds scored ${ADOPTION_DAYS}d after shipping, once the ledger has seen ${ADOPTION_MIN_REQUESTS} requests (weight ${ADOPTION_WEIGHT})`);
   console.log(`  open:    http://localhost:${PORT}\n`);
 
   // Serendipity daemon: first cycle after 90s, then on interval

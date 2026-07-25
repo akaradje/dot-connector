@@ -1,0 +1,95 @@
+{
+  "started_at": "2026-07-25T05:10:35.081Z",
+  "endpoints": {
+    "/api/self": {
+      "hits": 13,
+      "first_hit": "2026-07-25T05:10:46.317Z",
+      "last_hit": "2026-07-25T08:02:44.289Z"
+    },
+    "/api/transcend": {
+      "hits": 8,
+      "first_hit": "2026-07-25T05:11:19.312Z",
+      "last_hit": "2026-07-25T07:29:41.639Z"
+    },
+    "/api/dots": {
+      "hits": 40,
+      "first_hit": "2026-07-25T05:13:22.590Z",
+      "last_hit": "2026-07-25T08:03:33.482Z"
+    },
+    "/api/connections": {
+      "hits": 3,
+      "first_hit": "2026-07-25T05:13:22.599Z",
+      "last_hit": "2026-07-25T07:36:42.187Z"
+    },
+    "/api/lessons": {
+      "hits": 3,
+      "first_hit": "2026-07-25T05:13:22.604Z",
+      "last_hit": "2026-07-25T07:36:42.194Z"
+    },
+    "/api/limits": {
+      "hits": 3,
+      "first_hit": "2026-07-25T05:13:23.045Z",
+      "last_hit": "2026-07-25T07:36:42.270Z"
+    },
+    "/api/forgotten": {
+      "hits": 40,
+      "first_hit": "2026-07-25T05:13:23.057Z",
+      "last_hit": "2026-07-25T08:03:33.490Z"
+    },
+    "/api/scout/status": {
+      "hits": 40,
+      "first_hit": "2026-07-25T05:13:23.060Z",
+      "last_hit": "2026-07-25T08:03:33.496Z"
+    },
+    "/api/evolution": {
+      "hits": 4,
+      "first_hit": "2026-07-25T05:13:23.128Z",
+      "last_hit": "2026-07-25T07:36:42.287Z"
+    },
+    "/api/serendipity/status": {
+      "hits": 40,
+      "first_hit": "2026-07-25T05:13:23.130Z",
+      "last_hit": "2026-07-25T08:03:33.493Z"
+    },
+    "/api/consolidation/preview": {
+      "hits": 8,
+      "first_hit": "2026-07-25T05:13:23.361Z",
+      "last_hit": "2026-07-25T07:45:15.565Z"
+    },
+    "/api/forge/preview": {
+      "hits": 2,
+      "first_hit": "2026-07-25T05:18:26.765Z",
+      "last_hit": "2026-07-25T05:18:35.602Z"
+    },
+    "/api/consolidate": {
+      "hits": 1,
+      "first_hit": "2026-07-25T05:19:32.495Z",
+      "last_hit": "2026-07-25T05:19:32.495Z"
+    },
+    "/api/introspect": {
+      "hits": 2,
+      "first_hit": "2026-07-25T05:42:09.567Z",
+      "last_hit": "2026-07-25T06:45:08.694Z"
+    },
+    "/api/adoption": {
+      "hits": 2,
+      "first_hit": "2026-07-25T07:36:41.248Z",
+      "last_hit": "2026-07-25T07:36:42.317Z"
+    },
+    "/api/forge/loop": {
+      "hits": 2,
+      "first_hit": "2026-07-25T07:36:41.299Z",
+      "last_hit": "2026-07-25T07:36:42.312Z"
+    },
+    "/api/knowledge/preview": {
+      "hits": 7,
+      "first_hit": "2026-07-25T07:36:41.305Z",
+      "last_hit": "2026-07-25T08:03:33.501Z"
+    },
+    "/api/endpoints": {
+      "hits": 1,
+      "first_hit": "2026-07-25T07:45:31.698Z",
+      "last_hit": "2026-07-25T07:45:31.698Z"
+    }
+  }
+}

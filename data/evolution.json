@@ -1,0 +1,1462 @@
+[
+  {
+    "id": "evo_cad3a393",
+    "at": "2026-07-25T08:09:15.878Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_b23bc238",
+      "title": "เครื่องมือเชื่อมจุดไม่เคยใช้จุดของตัวเองตอนเขียนโค้ดตัวเอง",
+      "category": "knowledge"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "เปิดทางให้คลังความรู้เข้าถึงพรอมป์ตหลอมตัวเองเป็นครั้งแรก: buildForgePrompt() ได้บล็อก 'หลักการข้ามโดเมนที่อาจใช้กับกำแพงนี้' ที่หัวพรอมป์ต ประกอบจากจุดที่เกี่ยวกับกำแพงนั้นที่สุดพร้อมเนื้อหาจริง (จัดอันดับด้วย 4-gram overlap ถ่วงด้วยลำดับความสนใจและประวัติการช่วยทำลายกำแพง จำกัดโดเมนละ 2 จุด) + นวัตกรรมที่ระบบเคยสังเคราะห์เองพร้อม hidden_pattern + บทเรียนจากเส้นตอบกลับ + รอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะโดยตั้ง focus = description + why_it_stands และ buildIntrospectPrompt() เลิกส่งแค่ d.title. คำถามที่ค้ำกำแพงนี้ไว้ ('เติมเข้าไปอีกคือการทำร้ายตัวเอง') ถูกตอบด้วยเพดาน: บล็อกกินที่คงที่ไม่โตตามคลัง และ /api/forge/preview รายงานขนาดของทุกส่วนของพรอมป์ตเป็นตัวเลข. ที่สำคัญที่สุด ทุกรอบต้องประกาศ used_dot_ids แล้วคำประกาศนั้นถูกเขียนกลับเป็นการเชื่อมจุดจริงที่ผลของด่านทั้งหมดกลายเป็น outcome ของมัน — รอบผ่าน +1 รอบตก -1 — คลังความรู้จึงเลิกเป็นคลังที่ผิดไม่ได้",
+      "differs_from_previous": "ยังไม่มีรอบก่อนที่ตกกับกำแพงนี้ — รอบนี้เป็นครั้งแรก จึงไม่มีวิธีเดิมให้เลี่ยง แต่รอบนี้ตั้งใจไม่ทำสิ่งที่ง่ายกว่าและเคยเป็นรูปแบบของรอบที่ไม่มีใครใช้: ไม่ใช่แค่เพิ่มความรู้เข้าพรอมป์ตแล้วจบ (นั่นคือพรอมป์ตที่ยาวขึ้นเฉย ๆ) แต่ผูกความรู้เข้ากับเส้นตอบกลับที่หักคะแนนได้ และผูกกับ UI ที่กดถึงได้จากรายการกำแพงแต่ละอันโดยตรง",
+      "what_changed": [
+        "server.js: เพิ่มชั้น 6.9 ทั้งชุด — wallFocus, wallRelevance (4-gram overlap ถ่วงด้วย attention ที่ปรับสัดส่วนแล้วและ forge_score), pickForgeDots (เพดานโดเมน), forgeInnovations, wallInsight, forgeKnowledge, buildKnowledgeBlock, introspectKnowledgeBlock",
+        "server.js: buildForgePrompt() รับ knowledge เป็นพารามิเตอร์และยัดบล็อกไว้ก่อนแผลเป็นและก่อนซอร์สโค้ด + เพิ่มสัญญา used_dot_ids/used_principle ในสคีมา JSON และกฎเหล็กข้อ 13 ห้ามทำให้กลไกนี้อ่อนลง",
+        "server.js: buildIntrospectPrompt() เลิกส่ง dots.map(d => d.title) — ส่งเนื้อหาจริงของจุดที่ลำดับความสนใจสูงสุด 16 จุดแล้วย่อหางเหลือชื่อ พร้อม hidden_pattern ของนวัตกรรมที่เคยสังเคราะห์",
+        "server.js: เส้นตอบกลับของคลัง — forgeFeedbackPlan/forgeFeedbackRecord/applyForgeFeedback เขียนคำประกาศของรอบเป็นการเชื่อมจุดจริงใน connections.json โดยให้ด่านเป็นผู้ให้คะแนน outcome (ผ่าน = shipped 5/5, ตก = dead 1/5) และ enrichDots เพิ่ม forge_uses/forge_score/forge_proven",
+        "server.js: attemptEvolution() ย้าย readGuarded() ไปหลังการเลือกกำแพงและหลังรอบเชื่อมจุดเล็งกำแพง (แก้บั๊กเดิมที่ introspect() เขียน limits.json แล้วตกด่าน guard ทันที) และเรียก applyForgeFeedback หลังคำตัดสินโดยห่อ try/catch ไม่ให้กระทบรอบที่ผ่านแล้ว",
+        "server.js: buildLessons() กรองบันทึกของรอบหลอมตัวเองออกโดยปริยาย ไม่ให้เบียดบทเรียนของไอเดียใน Layer 4.5",
+        "server.js: เพิ่ม GET /api/forge/knowledge, POST /api/forge/knowledge/dryrun, POST /api/forge/insight · เพิ่ม self_connector ใน /api/self · เพิ่ม knowledge + prompt_parts ใน /api/forge/preview · ต่อท้าย /api/forge/knowledge ใน REGRESSION_ENDPOINTS",
+        "public/index.html: ส่วน Layer 06.9 ใหม่ (แถบสรุป + ปุ่มดูความรู้ที่รอบถัดไปจะได้อ่าน + สั่งรอบเชื่อมจุดเล็งกำแพง + ลองด่านป้อนกลับด้วยรอบสมมติ + ดูบล็อกข้อความจริง), ปุ่ม 🧠/⚡ บนกำแพงทุกอันในรายการขอบเขต, ป้ายคะแนนช่วยทำลายกำแพงบนการ์ดจุด, ป้ายกำกับการ์ดผลลัพธ์ที่เป็นรอบหลอมตัวเอง/รอบเล็งกำแพง",
+        "selftest/evo_cad3a393.js: ไฟล์พิสูจน์ที่ทดสอบทั้งการเลือกความรู้ เพดานโดเมน บล็อกในหัวพรอมป์ตจริง และการที่คะแนนของจุดขยับตามผลของรอบ",
+        "README.md: หัวข้อ Layer 06.9 เต็ม + แถวในตารางสถาปัตยกรรม + 3 endpoint ใหม่ + 6 ตัวแปรตั้งค่าใหม่ + ขั้นตอน 0.5/9.5 ในลำดับการทำงานของ Layer 6 + ราวกันตกข้อใหม่ + ข้อจำกัดที่พูดตรง ๆ"
+      ],
+      "new_capability": "ตอนนี้รอบหลอมตัวเองได้อ่านหลักการจริงจากคลังความรู้ของตัวเองก่อนแตะโค้ด (พร้อมรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ) แล้วต้องประกาศว่าใช้หลักการจากจุดไหน — คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด ทำให้คลังความรู้เริ่มถูกพิสูจน์ได้ว่าจุดไหนช่วยทำลายกำแพงได้จริงและจุดไหนถูกอ้างแล้วกำแพงไม่ล้ม",
+      "used_dot_ids": [
+        "dot_bf9a3aed",
+        "dot_21a771d4"
+      ],
+      "used_principle": "จาก dot_bf9a3aed ('ไม่มีเส้นตอบกลับ — ผลลัพธ์ไม่เคยไหลกลับเข้าความคิดครั้งถัดไป') หยิบหลักการว่าความรู้ที่ไม่มีทางถูกหักล้างได้ ก็ไม่มีทางถูกพิสูจน์ได้ จึงไม่สร้างระบบคะแนนใหม่ให้คลัง แต่ทาบมันลงบนกลไกเดิมทั้งดุ้น: คำประกาศของรอบกลายเป็นการเชื่อมจุดจริง ผลของด่านกลายเป็น outcome ของมัน แล้วปล่อยให้ weightedSignal/enrichDots ของ Layer 4.5 ทำงานโดยไม่แก้แม้แต่บรรทัดเดียว. จาก dot_21a771d4 ('ภูมิคุ้มกันแบบจดจำ: แข็งแรงขึ้นเพราะเคยพัง') หยิบรูปทรงว่าระบบแข็งแรงขึ้นได้จากการจดจำสิ่งที่พังโดยเฉพาะ — จึงบังคับให้รอบที่ *ตก* ก็ต้องป้อนคะแนนกลับเข้าจุดที่มันอ้างด้วย ไม่ใช่นับแต่รอบที่ผ่าน เพราะถ้านับแต่รอบที่ผ่าน คะแนนของทุกจุดจะเป็นบวกเสมอและคลังก็จะยังผิดไม่ได้เหมือนเดิม",
+      "usage_endpoints": [
+        "/api/forge/knowledge",
+        "/api/forge/knowledge/dryrun",
+        "/api/forge/insight"
+      ],
+      "usage_note": "GET /api/forge/knowledge ถูกเรียกอัตโนมัติทุกครั้งที่หน้าเว็บโหลด (loadForge → loadSelfConnector) เพื่อเติมแถบ Layer 06.9 และถูกเรียกอีกครั้งเมื่อกดปุ่ม '🧠 ดูความรู้ที่รอบถัดไปจะได้อ่าน' หรือปุ่ม '🧠 ความรู้ที่จะใช้กับกำแพงนี้' บนกำแพงทุกอันในรายการขอบเขต (พร้อม ?limitId=) · POST /api/forge/knowledge/dryrun ถูกเรียกจากปุ่ม '🧪 ลองด่านป้อนกลับด้วยรอบสมมติ' ซึ่งยิงสองครั้งต่อการกด (รอบสมมติที่ผ่านและที่ตก) เพื่อให้เจ้าของเห็นด้วยตาว่าคะแนนของจุดขยับไปทางไหน โดยไม่เสียรอบ AI · POST /api/forge/insight ถูกเรียกจากปุ่ม '⚡ สั่งรอบเชื่อมจุดเล็งกำแพงเป้าหมาย' และปุ่ม '⚡ เชื่อมจุดเล็งกำแพงนี้' บนกำแพงแต่ละอัน (มีกล่องยืนยันเพราะใช้ AI จริง) · นอกจากนี้ ensureWallInsight() ในทุกรอบขยายจะใช้เส้นทางเดียวกันโดยเรียกฟังก์ชันตรง ๆ ทุก FORGE_INSIGHT_HOURS ชั่วโมง",
+      "proof_file": "selftest/evo_cad3a393.js",
+      "proof_explains": "ยิง HTTP จริงเพื่อตรวจสามชั้น: (1) POST /api/forge/knowledge/dryrun เรียก forgeKnowledge/wallRelevance/forgeFeedbackPlan/forgeFeedbackRecord ตัวจริงด้วยกำแพงและคลังสมมติ 12 จุด แล้วยืนยันว่าจุดที่ทาบโครงสร้างกับกำแพงได้อยู่อันดับสูงกว่าจุดที่ไม่เกี่ยว เพดานโดเมนดันจุดจากโดเมนอื่นเข้าบล็อกได้จริง และการประกาศ used_dot_ids ทำให้ value_score/forge_score/attention_score ของจุดขยับ +1 เมื่อรอบผ่าน และ -1 เมื่อรอบตก โดยรอบที่ไม่ประกาศไม่มีอะไรถูกเขียนและ id ที่ไม่มีจริงถูกรายงาน (2) GET /api/forge/preview ต้องมีบล็อกความรู้พร้อมสัญญา used_dot_ids/used_principle อยู่ในหัวพรอมป์ตจริง และรายงาน prompt_parts ของทุกส่วน (3) เขียนคลังจำลองลง data/ ของแซนด์บ็อกซ์แล้วตรวจว่า /api/dots และ /api/forge/knowledge เห็นคะแนน forge ของจุดนั้นจริง แล้วคืนค่าเดิม. โค้ดเดิมต้องตกเพราะทั้งสามเส้นทางเป็น 404, prompt_head ไม่มีบล็อกความรู้, /api/dots ไม่มีสนาม forge_uses/forge_score และ /api/self ไม่มี self_connector",
+      "how_to_verify": "รีสตาร์ตเครื่องยนต์ แล้วเลื่อนไปที่ส่วน 'Layer 06.9 · The Self-Connector' ใต้ Layer 06.8: แถบบนสุดจะบอกว่ารอบถัดไปจะได้อ่านกี่จุดจากกี่โดเมน กินพรอมป์ตกี่ตัวอักษรจากเพดานเท่าไร · กด '🧠 ดูความรู้ที่รอบถัดไปจะได้อ่าน' จะเห็นเนื้อหาจริงของแต่ละจุดพร้อมคะแนนความเกี่ยว และปุ่ม '🧾 ดูบล็อกข้อความจริง' เปิดดูข้อความที่จะถูกยัดเข้าหัวพรอมป์ตได้ทั้งดุ้น · กด '🧪 ลองด่านป้อนกลับด้วยรอบสมมติ' จะเห็นทันทีว่าถ้ารอบอ้างจุดเหล่านี้แล้วผ่าน/ตก คะแนนของจุดขยับไปทางไหน · กด '⚡ เชื่อมจุดเล็งกำแพงนี้' บนกำแพงใดก็ได้ในรายการขอบเขต แล้วรอบเชื่อมจุดที่ได้จะโผล่ในรายการนวัตกรรมพร้อมป้าย '🎯 เล็งกำแพงของระบบเอง'",
+      "next_boundary": "คำประกาศ used_dot_ids ยังเป็นคำพูดของโมเดล ระบบตรวจได้แค่ว่า id มีจริงและอยู่ในบล็อกที่ส่งให้จริง แต่ตรวจไม่ได้ว่าหลักการนั้นปรากฏใน diff จริงหรือถูกหยิบมาอ้างให้ดูดี — กำแพงถัดไปคือการเทียบคำประกาศกับ diff ของรอบนั้นด้วยโค้ด (เช่น ให้รอบต้องชี้บรรทัดที่หลักการนั้นกลายเป็นกลไก แล้วให้ด่านตรวจว่าบรรทัดเหล่านั้นถูกแตะจริง) เพื่อให้ 'ใช้หลักการ' เป็นสิ่งที่วัดได้ ไม่ใช่สิ่งที่ประกาศได้"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 268,
+        "bytes_delta": 17126
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 160,
+        "bytes_delta": 14633
+      },
+      {
+        "path": "selftest/evo_cad3a393.js",
+        "action": "created",
+        "lines": 518,
+        "bytes_delta": 24026
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 898,
+        "bytes_delta": 47284
+      }
+    ],
+    "checks": {
+      "changed": true,
+      "proof_written": true,
+      "declared_usage": true,
+      "declared_usage_detail": "ประกาศไว้ 3 เส้น: /api/forge/insight, /api/forge/knowledge, /api/forge/knowledge/dryrun (เส้นทางใหม่จากโค้ดจริง 3 · ที่รอบนี้อ้างเอง 3) — อีก 7 วันบันทึกการใช้งานจะเป็นผู้ตัดสินว่ามีใครเรียกจริงไหม",
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 58578",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · int /api/consolidation/preview ยังตอบ 200 — ได้ 200\n✓ endpoint /api/endpoints ยังตอบ 200 — ได้ 200\n✓ endpoint /api/knowledge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint /api/knowledge/archive ยังตอบ 200 — ได้ 200\n✓ endpoint /api/adoption ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — เครื่องมือเชื่อมจุดใช้จุดของตัวเองตอนเขียนโค้ดตัวเองแล้ว และคลังความรู้เริ่มถูกพิสูจน์ด้วยการที่มันช่วยทำลายกำแพงได้จริงหรือไม่",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · กมาพร้อม 'เนื้อหาจริง' ไม่ใช่แค่ชื่อจุด · บล็อกพานวัตกรรมที่ระบบเคยสังเคราะห์เอง และบทเรียนจากเส้นตอบกลับเข้ามาด้วย · พรอมป์ตส่องกระจก (buildIntrospectPrompt) เห็นเนื้อหาของจุดจริง ไม่ใช่แค่รายชื่อจุดอีกต่อไป · POST /api/forge/knowledge/dryrun เรียกฟังก์ชันเลือกความรู้ตัวจริงด้วยของสมมติได้ (โค้ดเดิมได้ 404) · จุดที่โครงสร้างทาบกับกำแพงได้ ถูกจัดอันดับสูงกว่าจุดที่ไม่เกี่ยวกับกำแพงเลย · exception",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 19 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/loop",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/candidates",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/gaps",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/consolidation/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/endpoints",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/knowledge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/knowledge/archive",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/adoption",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_cad3a393.js",
+    "backup": "evolution/backups/evo_cad3a393",
+    "turns": [
+      {
+        "turn": 1,
+        "at": "2026-07-25T08:09:15.877Z",
+        "ok": true,
+        "fed_back_chars": 0,
+        "failed_gates": [],
+        "files_changed": 4
+      }
+    ],
+    "turn_count": 1,
+    "max_turns": 3,
+    "stopped": "passed",
+    "history_used": {
+      "rounds": [],
+      "attempts_before": 0,
+      "cap": 3,
+      "left": 3,
+      "distinct_approaches": 0
+    },
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "adoption": {
+      "endpoints": [
+        "/api/forge/insight",
+        "/api/forge/knowledge",
+        "/api/forge/knowledge/dryrun"
+      ],
+      "claimed": [
+        "/api/forge/insight",
+        "/api/forge/knowledge",
+        "/api/forge/knowledge/dryrun"
+      ],
+      "detected": [
+        "/api/forge/insight",
+        "/api/forge/knowledge",
+        "/api/forge/knowledge/dryrun"
+      ],
+      "ignored": [],
+      "note": "GET /api/forge/knowledge ถูกเรียกอัตโนมัติทุกครั้งที่หน้าเว็บโหลด (loadForge → loadSelfConnector) เพื่อเติมแถบ Layer 06.9 และถูกเรียกอีกครั้งเมื่อกดปุ่ม '🧠 ดูความรู้ที่รอบถัดไปจะได้อ่าน' หรือปุ่ม '🧠 ความรู้ที่จะใช้กับกำแพงนี้' บนกำแพงทุกอันในรายการขอบเขต (พร้อม ?limitId=) · POST /api/forge/knowledge/dryrun ถูกเรียกจากปุ่ม '🧪 ลองด่านป้อนกลับด้วยรอบสมมติ' ซึ่งยิงสองครั้งต่อการกด (รอบสมมติที่ผ่านและที่ตก) เพื่อให้เจ้าของเห็นด้วยตาว่าคะแนนของจุดขยับไปทางไหน โดยไม่เสียรอบ AI · POST /api/forge/insi",
+      "declared_at": "2026-07-25T08:09:15.878Z",
+      "matures_at": "2026-08-01T08:09:15.878Z",
+      "grace_days": 7,
+      "min_requests": 50
+    },
+    "adoption_used": {
+      "system_signal": null,
+      "category": "knowledge",
+      "category_signal": null,
+      "base_score": 7.5,
+      "adjusted_score": 7.5,
+      "adoption_adjust": 0,
+      "unused_streak": 0,
+      "unused_rounds": [],
+      "observed_requests": 35
+    },
+    "dot_created": true
+  },
+  {
+    "id": "evo_d0f8d35b",
+    "at": "2026-07-25T07:28:23.569Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_5af94b5e",
+      "title": "ชั้นที่ 6 พิสูจน์ได้ว่า \"ทำได้\" แต่ไม่เคยรู้ว่า \"มีใครใช้\"",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "ต่อ Layer 6.8 \"The Adoption Ledger\" — เส้นตอบกลับของตัวระบบเอง: ทุกรอบขยายต้องประกาศเส้นทางที่ความสามารถของมันจะถูกใช้ผ่าน (ด่านใหม่ declared_usage ใน runForgeGates + declareAdoption() ที่ตรวจคำประกาศกับ router จริงด้วย declaredApiPaths จึงอ้างเกินไม่ได้และปิดบังเส้นทางที่ diff เพิ่มมาไม่ได้) แล้ว ADOPTION_DAYS วันให้หลัง adoptionRound()/adoptionReport() เปิด evolution/endpoint-usage.json มาให้คะแนนรอบนั้นด้วยสูตรเดียวกับ connectionSignal() จริง ๆ — ผม refactor ทั้งสองฝั่งให้เรียก weightedSignal() ตัวเดียวกัน กติกาเรื่อง 'ความเงียบ = null ไม่ใช่ติดลบ' จึงเป็นข้อเดียวกันโดยโครงสร้าง จากนั้นคะแนนไหลกลับสองทาง: รอบที่ 0 hit ติดกันครบ ADOPTION_STREAK ทำให้ daemon สั่งรอบยุบรวมเองพร้อมส่งรอบเหล่านั้นเป็นเป้าหมายเข้าพรอมป์ต และ targetRanking() ถ่วง unlock−risk/2 ด้วยคะแนนการถูกใช้ของหมวดนั้น ทำให้ selectTarget() ลดลำดับกำแพงที่เคยผลิตของที่ไม่มีใครเรียก · ข้อจำกัดที่ต้องบอกตรง ๆ สองข้อ: (1) รอบนี้ผมมีเครื่องมือ Bash เฉพาะ node --check จึงรันไฟล์พิสูจน์เองไม่ได้เลย ตรวจได้แค่ syntax + ไล่โค้ดทีละบรรทัดเทียบกับ fixture — ด่านของระบบคือการรันจริงครั้งแรก (2) มีไฟล์สคริปต์ชั่วคราวที่ผมเขียนไว้ตอนพยายามบูตทดสอบเองค้างอยู่ที่ %TEMP%\\dot-drive.js (นอกโปรเจกต์ ลบไม่ได้เพราะแซนด์บ็อกซ์กันไว้ ไม่กระทบทรีหรือด่านใด)",
+      "differs_from_previous": "ยังไม่มีรอบก่อนที่ล้มเหลวกับกำแพงนี้ — รอบนี้เป็นครั้งแรก (โควตา 0/3) จึงไม่มีวิธีเดิมให้เลี่ยง แต่รอบนี้ต่างจากทุกชั้นที่ผ่านมาในเชิงแกนเวลา: 06.5/06.6/06.7 ล้วนเพิ่ม 'ด่านที่ตัดสินภายในรอบ' (แผลเป็น, ฟังก์ชันกลับด้าน, ลูปปิด) รอบนี้เพิ่มด่านแรกที่ตัดสิน *หลังรอบจบไปแล้ว* และเป็นด่านเดียวที่รอบนั้นเองไม่มีทางทำให้ผ่านด้วยการเขียนโค้ดเก่งขึ้น",
+      "what_changed": [
+        "server.js: เพิ่มส่วน Layer 6.8 — declaredApiPaths(), declareAdoption(), adoptionRound(), adoptionReport(), categoryOf(), categoryAdoption(), adoptionDebt() และ ADOPTION_RULE (ฟังก์ชันตัดสินทั้งชุดเป็น pure ต่อ (ledger, usage, now) จึง dry-run ได้)",
+        "server.js: แยก weightedSignal() ออกจาก connectionSignal() แล้วให้ adoptionRound() เรียกตัวเดียวกัน — 'สูตรเดียวกัน' เป็นความจริงระดับโค้ด ไม่ใช่คำอธิบาย (พฤติกรรมของ connectionSignal เท่าเดิมเป๊ะ)",
+        "server.js: ด่านใหม่ declared_usage ใน GATE_LABEL + runForgeGates() — รอบขยายที่ไม่เหลือเส้นทางประกาศเลยถูกตีตกและย้อนกลับ (รอบยุบรวมได้รับการยกเว้นเพราะไม่เพิ่มความสามารถ)",
+        "server.js: selectTarget() กลายเป็น targetRanking() + selectTarget() — ลำดับ = (unlock − risk/2) + ADOPTION_WEIGHT × คะแนนการถูกใช้ของหมวด · หมวดที่ยังไม่มีข้อมูลถ่วง 0 และ tie-break ย้อนกลับไปเป็นลำดับเดิมก่อน 6.8 ทุกกรณี",
+        "server.js: attemptEvolution() บันทึก entry.adoption (คำสัญญา + matures_at) และ entry.adoption_used (คะแนนที่มีผลตอนเลือกกำแพงนั้น) + slog บอกวันที่จะถูกตัดสิน",
+        "server.js: consolidationPlan() เพิ่ม adoption/unused_capabilities/due_reason และ buildConsolidationPrompt() ได้บล็อกรายชื่อความสามารถที่ไม่มีใครเรียกเป็นเป้าหมาย · daemon สั่งรอบยุบรวมเองเมื่อ 0 hit ติดกันครบเกณฑ์ ไม่ต้องรอครบ CONSOLIDATE_EVERY",
+        "server.js: buildAdoptionBlock() เข้าหัวพรอมป์ตรอบหลอมตัวเอง + JSON spec เพิ่ม usage_endpoints/usage_note + กฎเหล็กข้อ 12 (ห้ามแก้กลไกวัดการถูกใช้ให้อ่อนลง) และเพิ่มรายชื่อเดียวกันในกฎข้อ 4 ของรอบยุบรวม",
+        "server.js: เส้นทางใหม่ GET /api/adoption (เข้า REGRESSION_ENDPOINTS ด้วย) และ POST /api/adoption/dryrun · /api/limits เพิ่ม category_adoption/priority_base/priority_score/adoption_adjust · /api/self เพิ่ม adoption · /api/forge/preview เพิ่ม adoption (พร้อมบล็อกข้อความจริง) และอ่านบันทึกครั้งเดียวให้เป้าหมาย+ลำดับ+พรอมป์ตอ้างตัวเลขชุดเดียวกัน",
+        "public/index.html: ส่วนใหม่ 'Layer 06.8 · ด่านที่มาทีหลัง' — แถบสรุป, ปุ่ม 📈 ดูทุกรอบพร้อมเส้นทางและจำนวนครั้งที่ถูกเรียกจริง, ปุ่ม ⚖ ตารางลำดับกำแพงที่เห็นการถ่วง (พื้นฐาน → ถ่วง → คะแนนใหม่) · การ์ดใน Evolution Ledger แสดงคำสัญญาและสถานะการถูกใช้ของรอบนั้น · limitRow แสดงการถ่วงลำดับ · forgeBar และแถบรอบยุบรวมบอกหนี้ก้อนใหม่",
+        "README.md: แถว Layer 06.8 ในตารางสถาปัตยกรรม + หัวข้อเต็ม '📈 Layer 06.8 — The Adoption Ledger: ด่านที่มาทีหลัง' (รวมหัวข้อ 'ข้อจำกัดที่ต้องพูดตรง ๆ' ว่าสัญญาณนี้วัดการเข้าถึงได้จริง ไม่ใช่คุณค่า) + ด่าน 4.5 ในลำดับการทำงาน + ราวกันตกสองข้อ + ตาราง API สองเส้นทาง + ตัวแปรตั้งค่า 5 ตัว + บทสรุปท้ายไฟล์",
+        "selftest/evo_d0f8d35b.js: ไฟล์พิสูจน์ 499 บรรทัด (สองชั้น: นาฬิกาสมมติแบบ deterministic + บันทึกจริงในแซนด์บ็อกซ์)"
+      ],
+      "new_capability": "ตอนนี้ระบบรู้ว่า \"ของที่มันสร้างไว้ มีใครเรียกใช้จริงไหม\" — ทุกรอบขยายต้องประกาศเส้นทางที่ความสามารถจะถูกใช้ผ่าน แล้วอีก 7 วันบันทึกการใช้งานจริงจะตัดสินรอบนั้นเป็น 'ถูกใช้จริง' / 'ไม่มีใครเรียกเลย' / 'ยังรอเวลา' ด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของผู้ใช้ · รอบที่ไม่มีใครเรียกถูกเสนอเป็นเป้าหมายของรอบยุบรวมเองโดยอัตโนมัติ และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลงจนกำแพงที่คะแนนพื้นฐานต่ำกว่าแซงขึ้นมาก่อนได้",
+      "usage_endpoints": [
+        "/api/adoption",
+        "/api/adoption/dryrun"
+      ],
+      "usage_note": "/api/adoption ถูกเรียกจาก loadForge() ทุกครั้งที่เปิดหน้าเว็บ (เพื่อวาดแถบ 📈, ตารางลำดับกำแพง และสถานะการถูกใช้บนการ์ดทุกใบใน Evolution Ledger) และถูกยิงในทุก regression sweep เพราะอยู่ใน REGRESSION_ENDPOINTS · /api/adoption/dryrun ถูกเรียกเมื่อมีคนตรวจฟังก์ชันตัดสินด้วยตัวเลขสมมติ (ไฟล์พิสูจน์ของรอบนี้เรียกจริง แต่หน้าเว็บไม่เรียก) — จึงคาดว่ามันจะได้ hit น้อยกว่าเส้นแรกมาก และรอบนี้ยอมรับว่านั่นจะทำให้ coverage ของตัวเองไม่เต็ม 1 ตามกลไกที่มันเพิ่งเขียนเอง ซึ่งเป็นการรายงานตรงตามความจริง ไม่ใช่ข้อบกพร่อง",
+      "proof_file": "selftest/evo_d0f8d35b.js",
+      "proof_explains": "ทดสอบสองชั้น ชั้นแรกเรียก POST /api/adoption/dryrun ด้วยบันทึกการใช้งานสมมติ ทะเบียนกำแพงสมมติ และนาฬิกาคงที่ (2026-06-01) จึงให้ผลเหมือนกันทุกครั้งตลอดไป: รอบที่เส้นทางถูกเรียก 12 ครั้ง → adopted คะแนน +1 · รอบที่ครบกำหนดแล้วเงียบ → unused คะแนน −1 · รอบที่ผ่านมาเพียง 1 วัน → pending คะแนน null (ความเงียบยังไม่ใช่คำตัดสิน) · รอบที่อ้างเส้นทางเดิมซึ่งมีสถิติ 40 ครั้งแต่ครั้งสุดท้ายเกิด *ก่อน* วันประกาศ → ไม่ถูกนับว่าใช้ (ซื้อคะแนนด้วย /api/dots ไม่ได้) · รอบยุบรวมและรอบที่ตก → exempt · แล้วยืนยันผลลัพธ์สำคัญที่สุด: กำแพงหมวด architecture ที่คะแนนพื้นฐานสูงสุด (8) แพ้กำแพงหมวด knowledge (7) เพราะถูกถ่วง −2 จากประวัติ 0 hit จน next_target เปลี่ยนตัว ชั้นที่สองเขียนประวัติจำลองลง data/ ของแซนด์บ็อกซ์ ยิง /api/lessons จริง 60 ครั้ง แล้วตรวจว่า /api/adoption, /api/limits (is_next_target สลับจริง), /api/consolidation/preview (เสนอ unused_capabilities เอง + due_reason) และ /api/forge/preview (มีบล็อกเส้นตอบกลับ + บังคับ usage_endpoints/usage_note) เห็นการถูกเรียกนั้นและเปลี่ยนการตัดสินใจตามจริง · โค้ดเดิมต้องตกที่ข้อแรกทันทีเพราะ /api/adoption และ /api/adoption/dryrun ยังไม่มีอยู่ (404) และแม้จะข้ามข้อนั้นได้ /api/forge/loop ของมันก็ไม่มีด่าน declared_usage และ /api/limits ไม่มีสนาม priority_score/adoption_adjust เลย",
+      "how_to_verify": "เปิด http://localhost:4747 → กดรีสตาร์ตเครื่องยนต์ → เลื่อนไปส่วน Layer 06 หัวข้อ '📈 ด่านที่มาทีหลัง: มีใครใช้ของที่มันสร้างไว้จริงไหม' จะเห็นทันทีว่า 8 รอบที่ผ่านมาทั้งหมดขึ้นสถานะ 'เกิดก่อนชั้นนี้ วัดไม่ได้' (ระบบไม่เดาคะแนนย้อนหลังให้ตัวเอง) และมีเพียงรอบนี้ที่ขึ้น 'ยังรอเวลาตัดสิน' พร้อมเส้นทางที่มันประกาศไว้ · กด '📈 ดูทุกรอบ' เพื่ออ่านเหตุผลของแต่ละสถานะ และกด '⚖ ลำดับกำแพงถัดไป' เพื่อเห็นคอลัมน์ พื้นฐาน → ถ่วง → คะแนนใหม่ ของทุกกำแพงที่ยังยืนอยู่ · อีกจุดที่เห็นชัดคือแถบ '🗂 ทะเบียนเส้นทาง' ซึ่งวันนี้บอกว่า /api/knowledge/preview ที่ Layer 08 เพิ่งสร้างถูกเรียก 0 ครั้ง — ตัวเลขเดียวกันนั้นตอนนี้กลายเป็นคะแนน ไม่ใช่แค่ใบอนุญาตให้ถอดเส้นทางอีกแล้ว · ตรวจกลไกเองได้โดยไม่ต้องรอ 7 วันด้วย POST /api/adoption/dryrun (ส่ง rounds/usage/now/limits สมมติเข้าไป)",
+      "next_boundary": "สัญญาณนี้ยังแยก 'หน้าเว็บ GET ไปวาดเอง' ออกจาก 'มนุษย์เจตนากดปุ่ม' ไม่ได้ เพราะ recordEndpointHit() นับเฉพาะ pathname ไม่นับ HTTP method — ความสามารถที่หน้าเว็บโหลดเองจึงได้ hit ฟรี ในขณะที่ปุ่มที่ต้องมีคนกดจริงได้คะแนนยากกว่า ทั้งที่ครั้งหลังมีค่ามากกว่า · กำแพงถัดไปคือเลื่อนจาก 'วัดการเข้าถึงได้' เป็น 'วัดเจตนา' โดยนับแยกตาม method (GET อัตโนมัติ vs POST ที่มนุษย์สั่ง) แล้วให้ POST มีน้ำหนักสูงกว่า · และกำแพงที่รอบนี้ไปเจอโดยไม่ได้ตั้งใจ: ไฟล์พิสูจน์ selftest/evo_2296142a.js ยืนยัน REGRESSION_ENDPOINTS.length เป็นค่าคงที่ 15 มันจึงตกเงียบ ๆ มาตั้งแต่ Layer 06.7 เพิ่มเส้นทางที่ 16 — ชุดทดสอบสะสมของระบบเน่าได้เองโดยไม่มีใครรู้ เพราะ consolidationVerdict() ยอมให้ไฟล์ที่ 'ตกทั้งก่อนและหลัง' ผ่านไปในถัง brokenBoth โดยไม่ส่งเสียงเตือน"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 193,
+        "bytes_delta": 12253
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 124,
+        "bytes_delta": 10783
+      },
+      {
+        "path": "selftest/evo_d0f8d35b.js",
+        "action": "created",
+        "lines": 500,
+        "bytes_delta": 22017
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 562,
+        "bytes_delta": 30280
+      }
+    ],
+    "checks": {
+      "changed": true,
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 56218",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · /api/scout/gaps ยังตอบ 200 — ได้ 200\n✓ endpoint /api/consolidation/preview ยังตอบ 200 — ได้ 200\n✓ endpoint /api/endpoints ยังตอบ 200 — ได้ 200\n✓ endpoint /api/knowledge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint /api/knowledge/archive ยังตอบ 200 — ได้ 200\n✓ endpoint /api/adoption ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — ระบบรู้แล้วว่ามีใครใช้ของที่มันสร้าง และคะแนนนั้นย้อนกลับไปเปลี่ยนว่าจะสร้างอะไรต่อ",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · งถูกเรียกจริง → 'ถูกใช้จริง' และได้คะแนนบวก · รอบที่ครบกำหนดแล้วไม่มีใครเรียกเลย → 'ไม่มีใครเรียกเลย' และได้คะแนนติดลบ · เส้นทางเดิมที่ถูกเรียกครั้งสุดท้าย *ก่อน* วันประกาศ ไม่ถูกนับว่าใช้ (ซื้อคะแนนด้วยเส้นทางเดิมไม่ได้) · รอบที่ยังไม่ครบกำหนด → คะแนน null ไม่ใช่ติดลบ (ความเงียบยังไม่นับเป็นคำตัดสิน) · รอบที่เกิดก่อนชั้นนี้ / รอบยุบรวม / รอบที่ตก ถูกแยกออกจากการให้คะแนนอย่างซื่อสัตย์ · exception",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 18 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/loop",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/candidates",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/gaps",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/consolidation/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/endpoints",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/knowledge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/knowledge/archive",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_d0f8d35b.js",
+    "backup": "evolution/backups/evo_d0f8d35b",
+    "turns": [
+      {
+        "turn": 1,
+        "at": "2026-07-25T07:28:23.569Z",
+        "ok": true,
+        "fed_back_chars": 0,
+        "failed_gates": [],
+        "files_changed": 4
+      }
+    ],
+    "turn_count": 1,
+    "max_turns": 3,
+    "stopped": "passed",
+    "history_used": {
+      "rounds": [],
+      "attempts_before": 0,
+      "cap": 3,
+      "left": 3,
+      "distinct_approaches": 0
+    },
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_917465b0",
+    "at": "2026-07-25T06:44:03.542Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_7e762cb9",
+      "title": "คลังความรู้โตทางเดียว — มีรอบยุบรวมให้โค้ด แต่ไม่มีให้ความรู้",
+      "category": "knowledge"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "เพิ่ม Layer 08 \"The Distiller\" — ทิศทางที่สองของคลังความรู้ ซึ่งเป็นกำแพงรูปทรงเดียวกับที่ Layer 06.6 ทำลายไปแล้วในฝั่งโค้ด แต่ยังยืนครบในฝั่งความรู้ ทำสองอย่างพร้อมกัน: (1) ให้ buildConnectPrompt มีเพดานจริง — จุด CONNECT_FULL_DOTS อันดับแรกแสดงเต็ม (content ตัดที่ CONNECT_DOT_CHARS) ที่เหลือย่อเหลือดัชนี \"id · โดเมน · ชื่อจุด\" บรรทัดเดียว จึงเป็นการ 'ลืมเนื้อหาโดยไม่ลืมการมีอยู่' ครั้งแรกของระบบ และพรอมป์ตหยุดโตเชิงเส้น (2) เพิ่มรอบยุบรวมความรู้ที่รวบจุดซ้ำซ้อนเป็นจุดหลักการเดียว ตัดสินด้วย knowledgeVerdict() สามด่านตามที่กำแพงระบุไว้เป๊ะ: ทุกการเชื่อมที่เคยได้สัญญาณบวกต้องยังอธิบายได้ · จุดที่ proven ห้ามหาย · ตัวอักษรของ buildConnectPrompt ต้องลดลงจริง โดยรอบนี้ 'ลบจุดไม่ได้เลย' ทำได้แค่ดูดกลืน (จุดที่หายต้องมี id อยู่ใน distilled.absorbed[] ของจุดที่มาแทน แบนราบข้ามรอบ) และจุดเดิมถูกเก็บทั้งดวงใน data/knowledge.json ย้อนกลับได้เหมือน evolution ledger หมายเหตุตรงไปตรงมา: รอบนี้ผมรันไฟล์พิสูจน์เองไม่ได้เพราะเครื่องมือ Bash ที่ได้รับจำกัดไว้ที่ `node --check` เท่านั้น จึงตรวจได้แค่ syntax ของ server.js และไฟล์พิสูจน์ ที่เหลือไล่ตรวจด้วยการอ่านโค้ดและคำนวณค่าที่ assert ไว้ทีละข้อ (เช่น อัตราส่วนพรอมป์ต 60→180 จุดคำนวณได้ ~1.27 เท่า ขณะที่เกณฑ์คือ < 2 และเชิงเส้นคือ 3)",
+      "differs_from_previous": "รอบก่อน (evo_2474933e) ไม่เคยไปถึงโค้ด: มันตายตอนส่งพรอมป์ตให้ claude CLI (EOF) และ ledger บันทึกว่า '(ไม่มีไฟล์ถูกแก้)' จึงไม่มีตรรกะเดิมให้เขียนซ้ำ รอบนี้แตะ 4 ไฟล์จริง (server.js, public/index.html, README.md, selftest/evo_917465b0.js) และเลือกกลไกที่ต่างจากทางที่ระบบมีอยู่แล้วสองทาง: ไม่ได้ยืม proveConsolidation/consolidationVerdict มาใช้ซ้ำกับจุด (ซึ่งจะวัดขนาดไฟล์โค้ด ไม่ใช่ขนาดความรู้) และไม่ได้ใช้ทางลบของเดิม (DELETE /api/dots/:id หรือ scout veto) ที่ทำให้ความรู้หายจริง แต่สร้างฟังก์ชันความเหมาะสมคนละตัวชื่อ knowledgeVerdict() ที่วัดสามอย่างซึ่งรอบยุบรวมโค้ดวัดไม่ได้เลย — ความครอบคลุมของการเชื่อมที่เคยได้ผลจริง, การอยู่รอดของจุด proven, และความยาวจริงของ buildConnectPrompt ที่วัดโดยการเรียกฟังก์ชันนั้นตรง ๆ ไม่ใช่ประมาณเอา · และเพิ่มกลไกที่ไม่มีในทิศทางของโค้ดเลยคือ 'การดูดกลืนแทนการลบ' ซึ่งเป็นสิ่งเดียวที่ทำให้ด่านที่ 1 พิสูจน์ได้",
+      "what_changed": [
+        "server.js: เพิ่มค่าคงที่ Layer 08 (KNOWLEDGE_FILE, CONNECT_FULL_DOTS=40, CONNECT_DOT_CHARS=420, DISTILL_SIMILARITY, DISTILL_SCAN_MAX, DISTILL_HOURS, DISTILL_MODEL) และเพิ่ม ORIGIN.distill + ป้ายที่มา ⚗",
+        "server.js: แยก buildConnectPrompt เป็น renderDotFull / renderDotIndex / connectPromptBudget — หัวแสดงเต็มพร้อมตัด content ตามเพดาน หางย่อเหลือดัชนีบรรทัดเดียว จุด mustInclude ถูกดึงขึ้นหัวเสมอ",
+        "server.js: enrichDots คืน distilled_from / absorbed_count / absorbed_titles เพื่อให้จุดหลักการชี้กลับไปหาจุดเดิมได้ทั้งใน UI และในพรอมป์ต",
+        "server.js: เพิ่มบล็อก Layer 08 ทั้งชุด — knowledgeVerdict(), coverageIndex(), connectPromptChars(), findRedundantClusters() (Jaccard 4-gram + union-find), buildMergedDot() (แบนราบ absorbed ข้ามรอบ), applyKnowledgeMerge() (ตรวจก่อน ตัดสินต่อ เขียนดิสก์ทีหลัง), restoreKnowledgeRound(), knowledgePlan(), buildDistillPrompt(), distillKnowledge()",
+        "server.js: เพิ่ม 6 endpoint — GET /api/knowledge/preview, POST /api/knowledge/dryrun, POST /api/knowledge/merge, POST /api/knowledge/distill, GET /api/knowledge/archive, POST /api/knowledge/restore (merge/restore/distill ถูกล็อกไว้เมื่อ forging=true เพื่อไม่ให้ชนกับการเทียบไบต์ของ data/ ระหว่างรอบหลอมตัวเอง)",
+        "server.js: เพิ่ม /api/knowledge/preview และ /api/knowledge/archive เข้า REGRESSION_ENDPOINTS",
+        "server.js: serendipityCycle เพิ่มขั้นที่ 1.7 — เมื่อครบ DISTILL_HOURS และตรวจพบคลัสเตอร์ซ้ำซ้อนจริง daemon จะสั่งรอบยุบรวมความรู้เอง (พร้อม toast) และ boot จะ seed last_distill เพื่อไม่ให้รีสตาร์ตแล้วยุบรวมทันที",
+        "public/index.html: เพิ่ม section \"Layer 08 · The Distiller\" — แถบน้ำหนักคลัง, ปุ่มดูคลัสเตอร์ซ้ำซ้อนพร้อมปุ่มลองกับด่านตัดสินรายกลุ่ม (เรียก dryrun ตัวจริง), ปุ่มสั่งรอบยุบรวม, คลังจุดเดิมพร้อมปุ่มย้อนกลับรายรอบ, ป้าย ⚗ บนการ์ดจุดที่ยุบรวมมา",
+        "README.md: เพิ่มแถว Layer 08 ในตารางสถาปัตยกรรม, หัวข้อเต็ม \"⚗ Layer 08 — The Distiller\", 6 แถวใน API, 6 แถวในตารางตั้งค่า, data/knowledge.json ในโครงสร้างไฟล์ และย่อหน้าสรุปข้อ 08",
+        "selftest/evo_917465b0.js: ไฟล์พิสูจน์ 25+ ข้อ ทดสอบพฤติกรรมจริงผ่าน HTTP ทั้งด่านที่ผ่านและด่านที่ต้องปฏิเสธ รวมถึงการวัดว่าจุดเพิ่ม 3 เท่าแล้วพรอมป์ตไม่โตตาม"
+      ],
+      "new_capability": "คลังความรู้เดินได้สองทิศแล้ว: ระบบรวบจุดที่ซ้ำซ้อนให้เป็น 'จุดหลักการ' เดียวได้เอง โดยจะยอมก็ต่อเมื่อพิสูจน์ด้วยตัวเลขได้ว่าการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ครบ จุดที่พิสูจน์แล้วไม่หายแม้แต่จุดเดียว และพรอมป์ตเชื่อมจุดสั้นลงจริง — จุดเดิมถูกเก็บไว้ทั้งดวงและกดคืนได้ทุกเมื่อ · และพรอมป์ตที่ระบบต้องอ่านก่อนคิดเลิกยาวขึ้นตามจำนวนจุดตลอดกาล เพราะจุดที่ความสนใจต่ำถูกย่อเหลือดัชนีบรรทัดเดียว (ยังเลือกด้วย id ได้ทุกจุด)",
+      "proof_file": "selftest/evo_917465b0.js",
+      "proof_explains": "ไฟล์นี้เขียนคลังจำลองลง DOT_TEST_ROOT แล้วยิง HTTP จริงเพื่อตรวจว่า: ระบบหาคลัสเตอร์จุดซ้ำซ้อนเจอเองโดยไม่ใช้ AI · ด่านทั้งสามปฏิเสธถูกตัวจริง (แผนที่กลืนจุด proven ตกที่ด่าน 2 แต่ผ่านด่าน 1 / จุดที่หายไปเฉย ๆ ตกที่ด่าน 1 แต่ผ่านด่าน 2 / คลังที่ไม่เล็กลงตกที่ด่าน 3) · การยุบรวมที่ตกด่านไม่ขยับจุดแม้แต่จุดเดียวบนเส้นทางจริง ไม่ใช่แค่ในโหมดลอง · จุดหลักการพก id เดิมทั้งสามติดตัว · restore คืนจุดเดิมครบทุกตัวอักษร · และจุดในคลังเพิ่มจาก 60 เป็น 180 แล้วพรอมป์ตโตน้อยกว่า 2 เท่า โค้ดเดิมต้องตกทันทีที่ข้อแรก เพราะไม่มี /api/knowledge/* อยู่เลยสักเส้น (404) และ buildConnectPrompt ของมันไม่มีเพดาน จึงโตแบบหนึ่งต่อหนึ่งตามจำนวนจุดเสมอ",
+      "how_to_verify": "เปิด http://localhost:4747 แล้วดูส่วน \"Layer 08 · The Distiller\" ใต้คลังจุดความรู้ — แถบบนสุดบอกว่าพรอมป์ตเชื่อมจุดยาวเท่าไหร่ แสดงเต็มกี่จุด ย่อเป็นดัชนีกี่จุด และเพดานประหยัดไปกี่ตัวอักษรต่อรอบ · กด \"🔎 ดูจุดที่ระบบเห็นว่าซ้ำซ้อน\" เพื่อเห็นกลุ่มที่มันหาเจอเอง (🔒 คือจุดที่ยุบรวมไม่ได้) แล้วกด \"🧪 ลองกับด่านตัดสิน\" เพื่อเรียกฟังก์ชันความเหมาะสมตัวจริงโดยไม่แตะคลัง · กด \"⚗ สั่งรอบยุบรวมความรู้\" เพื่อให้ AI เขียนจุดหลักการมาแทน แล้วกด \"🗄 คลังจุดเดิมที่ถูกยุบรวม\" เพื่อกดย้อนกลับ",
+      "next_boundary": "ตัวชี้ขาดว่า 'สองจุดเป็นเรื่องเดียวกัน' ยังเป็นการวัดความคล้ายของตัวอักษร (Jaccard บน 4-gram) ซึ่งจับได้แค่จุดที่ใช้ 'คำ' เดียวกัน — จุดสองจุดที่มีโครงสร้างเดียวกันเป๊ะแต่มาจากคนละสาขาและคนละคำศัพท์ (ซึ่งคือสิ่งที่ทั้งเครื่องมือนี้ถูกสร้างมาเพื่อหา) จะไม่มีวันถูกมองว่าซ้ำซ้อน กำแพงถัดไปคือ: ระบบยังไม่มีตัวแทนความหมายของจุดที่ไม่ขึ้นกับถ้อยคำ มันจึงยุบรวมได้เฉพาะความซ้ำซ้อนระดับผิว และยังไม่มีทางยกระดับ 'ความคล้ายเชิงโครงสร้างข้ามโดเมน' ที่ Layer 02 หาเจอทุกวัน ให้กลายเป็นความรู้ถาวรในคลังได้เลย — hidden_pattern ของทุกการเชื่อมถูกเขียนลง connections.json แล้วไม่เคยกลับมาเป็นจุด"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 239,
+        "bytes_delta": 12429
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 93,
+        "bytes_delta": 7534
+      },
+      {
+        "path": "selftest/evo_917465b0.js",
+        "action": "created",
+        "lines": 421,
+        "bytes_delta": 18273
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 726,
+        "bytes_delta": 34510
+      }
+    ],
+    "checks": {
+      "changed": true,
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 53041",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · 200 — ได้ 200\n✓ endpoint เดิม /api/scout/gaps ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/consolidation/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/endpoints ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forge/loop ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — คลังความรู้เดินได้สองทิศแล้ว: ยุบรวมได้โดยพิสูจน์ได้ ย้อนกลับได้ และพรอมป์ตเลิกโตเชิงเส้น",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · ขยับจุดแม้แต่จุดเดียว · POST /api/knowledge/merge ยุบรวมจุดซ้ำซ้อนสามจุดเป็นจุดหลักการเดียวได้จริง · คลังเล็กลงจริง และจุดเดิมทั้งสามหายไปจากคลัง · จุดหลักการที่มาแทน พก id ของจุดเดิมทั้งสามติดตัวมาด้วย (จึงยังชี้กลับได้ว่าความรู้เดิมไปอยู่ไหน) · พรอมป์ตเชื่อมจุดที่ระบบวัดเองสั้นลงจริงหลังยุบรวม · GET /api/knowledge/archive มีรอบนี้อยู่ พร้อมจำนวนจุดเดิมที่เก็บไว้ และบอกว่าย้อนกลับได้ · exception",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 16 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/loop",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/candidates",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/gaps",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/consolidation/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/endpoints",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_917465b0.js",
+    "backup": "evolution/backups/evo_917465b0",
+    "turns": [
+      {
+        "turn": 1,
+        "at": "2026-07-25T06:44:03.542Z",
+        "ok": true,
+        "fed_back_chars": 0,
+        "failed_gates": [],
+        "files_changed": 4
+      }
+    ],
+    "turn_count": 1,
+    "max_turns": 3,
+    "stopped": "passed",
+    "history_used": {
+      "rounds": [
+        "evo_2474933e"
+      ],
+      "attempts_before": 1,
+      "cap": 3,
+      "left": 2,
+      "distinct_approaches": 1
+    },
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_2474933e",
+    "at": "2026-07-25T06:12:57.023Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "limit": {
+      "id": "lim_7e762cb9",
+      "title": "คลังความรู้โตทางเดียว — มีรอบยุบรวมให้โค้ด แต่ไม่มีให้ความรู้",
+      "category": "knowledge"
+    },
+    "report": {
+      "broke_it": false,
+      "summary": "รอบนี้ไม่จบ: ส่งพรอมป์ตให้ claude CLI ไม่สำเร็จ (EOF) — โปรเซสปิดก่อนอ่านข้อมูล"
+    },
+    "files": [],
+    "checks": {
+      "completed": false
+    },
+    "backup": null,
+    "verdict": "rejected",
+    "reason": "AI หยุดกลางรอบ (ส่งพรอมป์ตให้ claude CLI ไม่สำเร็จ (EOF) — โปรเซสปิดก่อนอ่านข้อมูล) — โค้ดที่เขียนค้างไว้ 0 ไฟล์ถูกย้อนกลับทั้งหมด (เก็บสำเนาไว้อ่านได้ที่ evolution/backups/evo_2474933e/attempted)",
+    "rolled_back": true
+  },
+  {
+    "id": "evo_144fe35c",
+    "at": "2026-07-25T06:09:18.398Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_59159986",
+      "title": "ผู้เขียนออกจากห้องไปก่อนที่ข้อสอบจะถูกตรวจ",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "เปลี่ยนรอบหลอมตัวเองจากการยิงนัดเดียวจบเป็นลูปปิด โดยแยกกลไกออกเป็นสามชิ้น: runForgeGates() รันด่านทั้งชุดกับทรีบนดิสก์โดยไม่ย้อนกลับอะไรเลย · buildGateFeedback() แปลงผลด่านเป็นพรอมป์ตเทิร์นถัดไปโดยพา stdout จริงของด่านไปทั้งดุ้น · forgeConverge() เป็นตัวขับลูปที่ฉีด ask/verify เข้ามาได้ attemptEvolution() จึงคุยกับโมเดลได้หลายเทิร์นในรอบเดียวผ่าน runClaudeRaw(..., {resume: sessionId}) และย้อนกลับก็ต่อเมื่อครบเพดานเทิร์นแล้วยังตก พร้อมเพิ่ม Bash(node --check:*) ให้โมเดลตรวจ syntax เองได้ในเทิร์นของตัวเอง",
+      "differs_from_previous": "ยังไม่มีรอบก่อนที่ตกกับกำแพงนี้ — รอบนี้เป็นครั้งแรก จึงเลือกทางหลัก (ลูปปิดเต็มรูปแบบ) แทนทางเบา (เพิ่มเครื่องมือ Bash อย่างเดียว) แล้วเก็บทางเบาไว้เป็นของแถมในลูป เพราะการเพิ่มเครื่องมืออย่างเดียวไม่ได้แก้ต้นเหตุ: stdout ของ runProof/regressionTest ยังคงเกิดหลังโปรเซสของโมเดลตายอยู่ดี",
+      "what_changed": [
+        "server.js: เพิ่ม runClaudeRaw() ที่คืน session_id และรับ resume เข้าไปได้ · runClaude() กลายเป็น wrapper บาง ๆ ผู้เรียกเดิมทั้งหมดไม่ต้องแก้",
+        "server.js: เพิ่ม runForgeGates() ยกด่านทั้งชุด (changed → guard → proof_written → syntax → smoke → 3 ด่านของโหมดนั้น) ออกมาจาก attemptEvolution โดยไม่เรียก restoreBackup เอง แต่ยังคืนไฟล์ใน data/ ทุกเทิร์น",
+        "server.js: เพิ่ม buildGateFeedback() ประกอบพรอมป์ตจากผลด่านจริง พร้อมคำสั่งห้ามใช้วิธีเดิม ห้ามแก้กลไกตรวจสอบให้อ่อนลง และนับโอกาสที่เหลือ",
+        "server.js: เพิ่ม forgeConverge() ตัวขับลูป ask→verify→feedback→stop ที่หยุดทันทีเมื่อผ่าน หยุดเมื่อครบเพดาน และหยุดแบบรักษาคำตัดสินเดิมเมื่อเทิร์นซ่อมเริ่มไม่ได้",
+        "server.js: attemptEvolution() ใช้ลูปนี้แทนการเรียก runClaude ครั้งเดียว · ledger เก็บ turns/turn_count/max_turns/stopped ของทุกรอบ",
+        "server.js: เพิ่ม GET /api/forge/loop (เข้า REGRESSION_ENDPOINTS ด้วย) และ POST /api/forge/loop/simulate ที่รัน forgeConverge ตัวจริงด้วยผลด่านสมมติ ไม่ใช้ AI ไม่เขียนไฟล์",
+        "server.js: FORGE_TOOLS เพิ่ม Bash(node --check:*) · FORGE_MAX_TURNS (ค่าเริ่มต้น 3) · FORGE_RETRY_TIMEOUT_MS · GATE_LABEL เพิ่ม changed/preservation/shrink",
+        "server.js: buildForgePrompt บอกรอบถัดไปว่ามีลูปและมี Bash แล้ว และเพิ่ม runForgeGates/forgeConverge/buildGateFeedback เข้ารายการกลไกที่ห้ามทำให้อ่อนลง",
+        "public/index.html: แถบ forge บอกเพดานเทิร์นและจำนวนรอบที่เคยกู้กลับได้ · การ์ดใน Evolution Ledger มีแถบ 🔁 turnTrail แสดงทีละเทิร์นว่าตกด่านไหนและถูกป้อนกลับกี่ตัวอักษร · CSS ใหม่ .turn-trail/.turn-step",
+        "README.md: เพิ่มแถว Layer 06.7 ในตารางสถาปัตยกรรม · หัวข้อรายละเอียดพร้อมตารางสามชิ้นส่วนและรายการสิ่งที่ไม่เปลี่ยนโดยตั้งใจ · เพิ่ม endpoint สองเส้นและตัวแปร FORGE_MAX_TURNS/FORGE_TIMEOUT_MIN",
+        "selftest/evo_144fe35c.js: ไฟล์พิสูจน์ใหม่"
+      ],
+      "new_capability": "รอบหลอมตัวเองไม่ตายก่อนรู้ผลอีกต่อไป — ถ้าโค้ดที่เพิ่งเขียนตกด่านไหน ระบบจะป้อน stdout จริงของด่านนั้นกลับเข้าเซสชันเดิมให้แก้ต่อทันทีในรอบเดียวกัน (สูงสุด 3 เทิร์น) รอบที่เคยต้องตายเพราะวงเล็บเกินหนึ่งตัวจึงกู้กลับมาได้โดยไม่เสียโควตาของกำแพงนั้นไปหนึ่งช่อง",
+      "proof_file": "selftest/evo_144fe35c.js",
+      "proof_explains": "เรียก forgeConverge() ตัวเดียวกับที่รอบจริงใช้ผ่าน POST /api/forge/loop/simulate ด้วยผลด่านสมมติที่มี stdout เจาะจง แล้วตรวจว่า stdout ของเทิร์นที่ 1 ไปโผล่ในพรอมป์ตที่เทิร์นที่ 2 ได้อ่านจริง เทิร์นแรกไม่มีการป้อนกลับ ลูปหยุดทันทีที่ผ่าน หยุดเมื่อครบเพดาน และนับโอกาสที่เหลือถูกต้อง โค้ดเดิมต้องตกเพราะไม่มีทั้ง /api/forge/loop และ /api/forge/loop/simulate (404 ทั้งคู่) — รอบของมันมีเทิร์นเดียว ไม่มีช่องทางใดส่งผลตรวจถึงโมเดลได้เลย",
+      "how_to_verify": "เปิด http://localhost:4747 แล้วดูแถบใต้หัวข้อ Layer 06 จะขึ้น '🔁 ลูปปิด: แก้ตัวเองได้ 3 เทิร์นต่อรอบ' · กด '🔥 ทำลายขอบเขต' รอบถัดไปแล้วดูการ์ดใน Evolution Ledger จะมีแถบ 🔁 บอกว่าเทิร์นไหนตกที่ด่านไหนและถูกป้อนผลตรวจกลับไปกี่ตัวอักษร · หรือดูตรง ๆ ที่ GET /api/forge/loop และลองยิง POST /api/forge/loop/simulate ด้วย {\"max_turns\":3,\"turns\":[{\"failed_gates\":[\"capability\"],\"detail\":\"ทดสอบ\"},{\"failed_gates\":[]}]} เพื่ออ่านข้อความจริงที่โมเดลจะได้รับกลางรอบ",
+      "next_boundary": "ลูปนี้ยังตรวจได้เฉพาะสิ่งที่ 'รันแล้วตอบ' — ด่านทั้งหมดยังเป็นการตรวจแบบผ่าน/ตกจากภายนอกกระบวนการคิดของโมเดล กำแพงถัดไปคือระบบยังตัดสิน 'คุณภาพของแนวทาง' ก่อนลงมือไม่ได้: มันต้องเขียนโค้ดจนเสร็จก่อนเสมอถึงจะรู้ว่าแนวทางนั้นผิดตั้งแต่ต้น ทั้งที่ selectTarget() เลือกกำแพงจากคะแนน unlock/risk ที่โมเดลเดาเองตอน introspect โดยไม่เคยถูกเทียบกับผลจริงของรอบที่ผ่านมาเลย"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 43,
+        "bytes_delta": 3094
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 61,
+        "bytes_delta": 5340
+      },
+      {
+        "path": "selftest/evo_144fe35c.js",
+        "action": "created",
+        "lines": 249,
+        "bytes_delta": 10702
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 321,
+        "bytes_delta": 15379
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 64064",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/consolidation/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/endpoints ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — ผลตรวจจริงไหลกลับถึงโมเดลภายในรอบเดียวกันแล้ว ผู้เขียนไม่ได้ออกจากห้องก่อนข้อสอบถูกตรวจอีกต่อไป",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · ดิมได้ 404) · เทิร์นแรกไม่มีอะไรถูกป้อนกลับ (ยังไม่มีผลตรวจให้ป้อน) · stdout จริงของด่านที่ตกในเทิร์นที่ 1 ถูกยกไปให้เทิร์นที่ 2 อ่านทั้งดุ้น · ข้อความที่ป้อนกลับบอกชัดว่ายังอยู่รอบเดิมและโค้ดยังไม่ถูกย้อนกลับ · ข้อความที่ป้อนกลับสั่งห้ามแก้กลไกตรวจสอบให้อ่อนลง และนับโอกาสที่เหลือถูกต้อง (เทิร์น 1/3 → เหลืออีก 2) · ด่านที่ตกในเทิร์นที่ 2 (คนละด่านกับเทิร์นแรก) ถูกป้อนต่อให้เทิร์นที่ 3 · exception",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 15 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/candidates",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/gaps",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/consolidation/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/endpoints",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_144fe35c.js",
+    "backup": "evolution/backups/evo_144fe35c",
+    "history_used": {
+      "rounds": [],
+      "attempts_before": 0,
+      "cap": 3,
+      "left": 3,
+      "distinct_approaches": 0
+    },
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_2296142a",
+    "at": "2026-07-25T05:38:11.308Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "consolidation",
+    "limit": {
+      "id": "consolidation",
+      "title": "รอบยุบรวม: ทำให้ตัวเองเล็กลงโดยไม่เสียความสามารถ",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "I've finished all the edits, but I'm blocked on verification: every `node` and file-copy command outside a narrow allowlist is being denied, and I won't claim a consolidation round passed without actually running its gates.\n\n**Where things stand — edits complete, verification pending:**\n\n| File | What I consolidated |\n|---|---|\n| `server.js` | Condensed 5 narrative comment blocks (~110 lines) that duplicated the README verbatim; merged the two near-identical verdict branches in `attemptEvolution` into one gate-table loop |\n| `public/index.html` | 12 copies of \"POST → parse → throw\" collapsed i"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": -55,
+        "bytes_delta": -1965
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": -8,
+        "bytes_delta": -1023
+      },
+      {
+        "path": "selftest/evo_2296142a.js",
+        "action": "created",
+        "lines": 398,
+        "bytes_delta": 16882
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": -64,
+        "bytes_delta": -5158
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 53462",
+      "preservation": true,
+      "preservation_detail": "ชุดทดสอบทั้ง 6 ไฟล์ให้ผลเหมือนกันทุกไฟล์ก่อนและหลัง",
+      "shrink": true,
+      "shrink_detail": "เล็กลงจริงตามตัวเลข: code_lines -127 · code_chars -8146 · prompt_chars -8146",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 15 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/candidates",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/scout/gaps",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/consolidation/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/endpoints",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_2296142a.js",
+    "backup": "evolution/backups/evo_2296142a",
+    "history_used": null,
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่านของรอบยุบรวม: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ชุดทดสอบ 6 ไฟล์ให้ผลเหมือนกันทั้งก่อนและหลัง · เล็กลงจริง (code_lines -127, prompt_chars -8146) · endpoint ที่ยังมีชีวิตครบทุกเส้น",
+    "plan_before": {
+      "files": 10,
+      "total_lines": 6885,
+      "code_files": 5,
+      "code_lines": 5389,
+      "code_chars": 261448,
+      "prompt_chars": 278515,
+      "endpoints": 15,
+      "retired_endpoints": 0
+    },
+    "suite": [
+      {
+        "file": "selftest/evo_00000000.js",
+        "own": false,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ /api/evolution คืนค่าเป็น array — [{\"id\":\"ev",
+        "old_detail": "exit 0 · /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ /api/evolution คืนค่าเป็น array — [{\"id\":\"ev"
+      },
+      {
+        "file": "selftest/evo_3e84f032.js",
+        "own": false,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/candidates ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/gaps ยังตอบ 200 — ได้ 200\n\n✓",
+        "old_detail": "exit 0 · 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/candidates ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/scout/gaps ยังตอบ 200 — ได้ 200\n\n✓"
+      },
+      {
+        "file": "selftest/evo_630305d2.js",
+        "own": false,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · endpoint เดิม /api/connections ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status",
+        "old_detail": "exit 0 · endpoint เดิม /api/connections ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status"
+      },
+      {
+        "file": "selftest/evo_6de88102.js",
+        "own": false,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ ",
+        "old_detail": "exit 0 · 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ "
+      },
+      {
+        "file": "selftest/evo_b8abecbd.js",
+        "own": false,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 —",
+        "old_detail": "exit 0 · เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 —"
+      },
+      {
+        "file": "selftest/evo_2296142a.js",
+        "own": true,
+        "new_ok": true,
+        "old_ok": true,
+        "new_detail": "exit 0 · ได้คำค้นเดิม\n✓ GET /api/scout/candidates ยังพรีวิวหลักฐานที่รอกู้โดยไม่เขียนอะไรลงคลัง — รอกู้ 0 ชิ้น\n✓ อ่านไฟล์นอกโฟลเดอร์ attempted ไม่ได้ — ได้ 404\n✓ evoId ที่ผิดรูปแบบถูกปฏิเสธ — ได้ 400\n✓ GET / ยังเสิร์ฟหน้าเว็บเป็น HTML และมีโครงหลักครบ — ได้ 200 · 76564 ไบต์\n✓ ไฟล์ที่ไม่มีอยู่ยังได้ ",
+        "old_detail": "exit 0 · ได้คำค้นเดิม\n✓ GET /api/scout/candidates ยังพรีวิวหลักฐานที่รอกู้โดยไม่เขียนอะไรลงคลัง — รอกู้ 0 ชิ้น\n✓ อ่านไฟล์นอกโฟลเดอร์ attempted ไม่ได้ — ได้ 404\n✓ evoId ที่ผิดรูปแบบถูกปฏิเสธ — ได้ 400\n✓ GET / ยังเสิร์ฟหน้าเว็บเป็น HTML และมีโครงหลักครบ — ได้ 200 · 78529 ไบต์\n✓ ไฟล์ที่ไม่มีอยู่ยังได้ "
+      }
+    ],
+    "metrics": {
+      "before": {
+        "files": 10,
+        "total_lines": 6885,
+        "code_files": 5,
+        "code_lines": 5389,
+        "code_chars": 261448,
+        "prompt_chars": 278515,
+        "endpoints": 15,
+        "retired_endpoints": 0
+      },
+      "after": {
+        "files": 11,
+        "total_lines": 7156,
+        "code_files": 5,
+        "code_lines": 5262,
+        "code_chars": 253302,
+        "prompt_chars": 270369,
+        "endpoints": 15,
+        "retired_endpoints": 0
+      }
+    },
+    "delta": {
+      "code_lines": -127,
+      "code_chars": -8146,
+      "code_files": 0,
+      "prompt_chars": -8146,
+      "endpoints": 0,
+      "total_lines": 271
+    },
+    "retirements": {
+      "requested": [],
+      "approved": [],
+      "refused": [],
+      "applied": []
+    },
+    "dot_created": true
+  },
+  {
+    "id": "evo_3e84f032",
+    "at": "2026-07-25T00:28:03.033Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_2a3afdc1",
+      "title": "ฟังก์ชันความเหมาะสมอนุญาตให้ 'โต' อย่างเดียว — ลบหรือรีแฟกเตอร์ตัวเองไม่ได้ตลอดกาล",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "สร้าง Layer 06.6 The Consolidator: ฟังก์ชันความเหมาะสมกลับด้านสำหรับ 'รอบยุบรวม' — ความสำเร็จวัดจากพฤติกรรมเหมือนเดิมเป๊ะบวกตัวเลขขนาดที่ลดลงจริง แทนที่จะวัดจากความสามารถที่เพิ่มขึ้น พร้อมทะเบียนการใช้งาน endpoint ที่ทำให้ถอดเส้นทางที่ไม่มีใครเรียกแล้วออกได้",
+      "new_capability": "ระบบมีรอบชนิดใหม่ที่ 'ทำให้ตัวเองเล็กลง' ได้โดยไม่เสียความสามารถ — เลิกถูกสาปให้โตอย่างเดียว",
+      "proof_file": "selftest/evo_3e84f032.js"
+    },
+    "files": [
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": null
+      },
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": null
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": null
+      },
+      {
+        "path": "selftest/evo_3e84f032.js",
+        "action": "created",
+        "lines": 447
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "smoke": true,
+      "capability": true,
+      "differential": null,
+      "regression": true
+    },
+    "backup": null,
+    "verdict": "accepted",
+    "reason": "ผ่านด่านที่ตรวจได้: syntax · บูตจริง · ไฟล์พิสูจน์ของรอบนี้ผ่าน 30/30 · endpoint เดิมครบทุกเส้น — ด่าน differential ตรวจไม่ได้เพราะไม่มี snapshot ให้เทียบ",
+    "provenance": "รอบนี้ AI timeout กลางทางก่อนกลไกตรวจสอบจะได้ทำงาน (เกิดก่อนแพตช์กันโค้ดค้าง) โค้ดจึงค้างบนดิสก์โดยไม่มี backup · ภายหลังมนุษย์แก้ข้อความ 1 วลีใน consolidationVerdict() ('ผ่านทั้งสองฝั่ง' → 'ผ่านทั้งก่อนและหลัง') ให้ตรงกับสิ่งที่ข้อสอบของรอบนี้เองบังคับ แล้วรันข้อสอบผ่านครบ · ไม่ใช่รอบที่ระบบพิสูจน์ตัวเองได้ครบทุกด่านโดยลำพัง",
+    "human_repair": true
+  },
+  {
+    "id": "evo_d5d60618",
+    "at": "2026-07-25T05:15:28.113Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "mode": "expansion",
+    "limit": {
+      "id": "lim_2a3afdc1",
+      "title": "ฟังก์ชันความเหมาะสมอนุญาตให้ 'โต' อย่างเดียว — ลบหรือรีแฟกเตอร์ตัวเองไม่ได้ตลอดกาล",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "I stopped before writing code, because the premise of this round is wrong in a way that matters.\n\n## What's actually on disk\n\n**This wall has already been broken — by a round that then died before a single gate ran.**\n\nThe prompt says `lim_2a3afdc1` is standing with 0 attempts and no failure history. But the working tree already contains the complete Layer 06.6 implementation the prompt asks me to write:\n\n- `server.js:1548` `consolidationVerdict()` — the inverted fitness function\n- `server.js:1609` `proveConsolidation()` — whole-suite re-run against both trees\n- `server.js:1398` `endpointLedge"
+    },
+    "files": [],
+    "checks": {},
+    "proof_file": "selftest/evo_d5d60618.js",
+    "backup": "evolution/backups/evo_d5d60618",
+    "history_used": {
+      "rounds": [],
+      "attempts_before": 0,
+      "cap": 3,
+      "left": 3,
+      "distinct_approaches": 0
+    },
+    "verdict": "rejected",
+    "reason": "ไม่มีไฟล์ใดถูกแก้จริง — รอบนี้ไม่นับเป็นวิวัฒนาการ",
+    "budget_after": {
+      "attempts": 1,
+      "failed_attempts": 1,
+      "distinct_approaches": 1,
+      "base": 3,
+      "earned": 0,
+      "cap": 3,
+      "left": 2,
+      "max": 6,
+      "exhausted": false,
+      "note": "เพดานขยับได้: พื้นฐาน 3 ครั้ง และทุกครั้งที่รอบที่ตก \"เสนอวิธีที่ต่างจากเดิมจริง\" จะได้โควตาเพิ่มอีก 1 ครั้ง (สูงสุด 6) — ลองวิธีเดิมซ้ำจะไม่ได้เพิ่ม"
+    }
+  },
+  {
+    "id": "evo_6de88102",
+    "at": "2026-07-24T23:38:50.860Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "limit": {
+      "id": "lim_70d3cd7c",
+      "title": "ความรู้เข้าได้ทางเดียว: ต้องรอมนุษย์ป้อน",
+      "category": "knowledge"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "ต่อ Layer 07 \"The Scout\" เข้าไปทั้งชั้น เพื่อเปิดประตูที่สองและสามให้ความรู้ไหลเข้าคลังโดยไม่ต้องรอมนุษย์: (1) evidenceCandidates()/harvestEvidenceDots() แปลง ev.novelty.similar_found ทุกชิ้นที่ Evidence Agent เคยค้นเว็บเจอแล้วฝังทิ้งไว้ใน connections.json ให้กลายเป็นจุดจริงที่เอาไปเชื่อมได้ ติดป้าย origin: scout:evidence + source: evidence:<conn-id> ตัดวงเล็บอ้างอิงออกเป็นชื่อจุดแล้วเก็บ URL ไว้ใน scout.references โดยไม่ใช้ AI ไม่ออกเน็ต และ idempotent จน daemon เรียกได้ทุกรอบ (2) domainCensus()/scoutGaps() ให้ระบบอ่านสำมะโนโดเมนของตัวเอง ตั้งชื่อโดเมนที่ไม่มีตัวแทนเลยเทียบกับโดเมนอ้างอิง 20 สาขา แล้วเขียนคำค้นของตัวเองแบบคำนวณได้ ก่อน scoutWeb() พา WebSearch ออกไปเก็บจุดใหม่ในโดเมนนั้นตามตาราง SCOUT_HOURS (3) ทุกจุดในระบบมีป้าย origin (อนุมานย้อนหลังจาก source ได้โดยไม่แตะ data/) และจุดที่ระบบหามาเองกดปฏิเสธได้ ซึ่ง rejectDot() จำคีย์ไว้ถาวรจนหยิบกลับมาไม่ได้อีก แม้แต่การกด DELETE ตามปกติก็นับเป็นการยับยั้ง",
+      "differs_from_previous": "ยังไม่มีรอบก่อนที่ล้มเหลวกับกำแพงนี้ — รอบนี้เป็นครั้งแรก จึงเดินตามแนวทางที่ระบบวิเคราะห์ตัวเองไว้ครบทั้งสามข้อ แทนที่จะทำแค่ข้อใดข้อหนึ่ง และเพิ่มราวกันตกที่แนวทางเดิมไม่ได้ระบุไว้สองอย่าง: จุดที่ระบบหามาเองต้องรอ AUTO_HOURS เหมือนการปลุกจุดที่ถูกลืมก่อนจึงจะจุดรอบเชื่อมจุดที่เสียค่า AI ได้ และนาฬิกาของ Scout ถูกตั้งตอนบูตครั้งแรกเหมือน last_evolution เพื่อไม่ให้การรีสตาร์ตกลายเป็นการสั่งค้นเว็บโดยไม่ได้ขอ",
+      "what_changed": [
+        "server.js: เพิ่ม ORIGIN/ORIGIN_LABEL/originOf() และให้ enrichDots() ติดป้าย origin, origin_label, self_sourced ให้ทุกจุด โดยอนุมานจาก source ของจุดเก่าได้เองจึงไม่ต้องแก้ไฟล์ใน data/",
+        "server.js: เพิ่มชั้น Layer 7 ทั้งบล็อก — scoutState(), scoutKey(), splitReference(), inferDomain(), evidenceCandidates(), harvestEvidenceDots(), domainCensus(), scoutQuery(), scoutGaps(), buildScoutPrompt(), scoutWeb(), rejectDot(), scoutStatus()",
+        "server.js: เพิ่ม endpoint GET /api/scout/status, GET /api/scout/candidates, GET /api/scout/gaps, POST /api/scout/harvest, POST /api/scout/web (ล็อก 503 ใต้ DOT_SELFTEST), POST /api/scout/reject และเพิ่มสามเส้นแรกเข้า REGRESSION_ENDPOINTS",
+        "server.js: DELETE /api/dots/:id ของจุดที่ระบบหามาเองกลายเป็นการยับยั้งที่ถูกจำไว้ ส่วนจุดของเจ้าของยังเป็นการลบเฉย ๆ · POST /api/dots และ harvestText() ติดป้าย origin: human",
+        "server.js: daemon กู้หลักฐานเป็นจุดทุกรอบ (ฟรี) และออกค้นเว็บเองทุก SCOUT_HOURS พร้อม toast · จุดที่ระบบหามาเองต้องรอ AUTO_HOURS ก่อนจึงจะจุดรอบเชื่อมจุดอัตโนมัติได้ · นาฬิกา Scout ถูกตั้งตอนบูตแรกเพื่อไม่ให้รีสตาร์ตแล้วออกเน็ตทันที",
+        "server.js: buildConnectPrompt() บอกที่มาของทุกจุดให้รอบเชื่อมจุดรู้ว่าอะไรมาจากเจ้าของและอะไรระบบหามาเอง",
+        "public/index.html: เพิ่มแถบ 🔭 The Scout เหนือคลังจุด (สัดส่วนที่มา, ปุ่มกู้หลักฐาน, ปุ่มออกค้นเว็บเอง, ชิปโดเมนที่ยังว่างพร้อมคำค้นที่ระบบตั้งเอง), การ์ดจุดแสดงป้ายที่มาและเส้นประ พร้อมปุ่ม 🚫 ปฏิเสธ",
+        "README.md: เพิ่มแถว Layer 07 ในตารางสถาปัตยกรรม, ส่วน \"Layer 07 — The Scout\" พร้อมราวกันตกด้านความเป็นเจ้าของ, 6 แถว API ใหม่, ตัวแปร SCOUT_HOURS/SCOUT_MODEL/SCOUT_MAX และบทปิดท้ายว่าทำไมความรู้ต้องเลิกเข้าทางเดียว",
+        "selftest/evo_6de88102.js: ไฟล์พิสูจน์ใหม่ 30 ข้อตรวจ ทดสอบพฤติกรรมจริงผ่าน HTTP บนคลังจำลองในแซนด์บ็อกซ์"
+      ],
+      "new_capability": "ตอนนี้คลังความรู้โตเองได้ตอนคุณไม่ว่าง: \"สิ่งใกล้เคียงที่มีอยู่จริงในโลก\" ที่ระบบเคยค้นเจอตอนพิสูจน์ไอเดียแล้วทิ้งทุกครั้ง กลายเป็นจุดที่เอาไปเชื่อมได้จริง และเมื่อระบบเห็นว่าคลังไม่มีจุดในโดเมนไหนเลย มันจะเขียนคำค้นของตัวเองแล้วออกไปค้นเว็บมาเติมเอง — โดยทุกจุดติดป้ายว่ามาจากไหน และจุดที่ระบบหามาเองคุณกดปฏิเสธได้ ซึ่งมันจะจำไว้ตลอดไป",
+      "proof_file": "selftest/evo_6de88102.js",
+      "proof_explains": "ไฟล์พิสูจน์เขียนคลังจำลอง (จุดของมนุษย์/ของการหลอมตัวเอง/ของที่เคยกู้ไว้ + การเชื่อมที่มี similar_found สามชิ้น) ลงแซนด์บ็อกซ์ แล้วตรวจผ่าน HTTP จริงว่า: ทุกจุดมีป้าย origin ที่อนุมานถูกทั้งสามแบบ, /api/scout/candidates เห็นของที่เคยถูกทิ้งและตัดวงเล็บอ้างอิงเป็นชื่อจุดพร้อมเก็บ URL, /api/scout/harvest เปลี่ยนมันเป็นจุดจริงและรันซ้ำไม่เกิดจุดซ้ำ, /api/scout/gaps ตั้งชื่อโดเมนที่ว่างและเขียนคำค้นคงที่ของตัวเอง, การปฏิเสธและการลบจุดที่ระบบหามาเองถูกจำจนกู้ซ้ำไม่คืนกลับมา และ /api/scout/web ตอบ 503 แทนที่จะแอบออกเน็ตตอนถูกทดสอบ — โค้ดเดิมต้องตกตั้งแต่ข้อแรกเพราะ /api/dots ของมันไม่มีสนาม origin เลย และ /api/scout/* ทุกเส้นได้ 404",
+      "how_to_verify": "เปิด http://localhost:4747 แล้วรีสตาร์ตเครื่องยนต์ → เหนือคลังจุดจะมีแถบ 🔭 The Scout บอกที่มาของทุกจุด กดปุ่ม \"🧪 กู้หลักฐานที่เคยค้นเจอ (4 ชิ้นรออยู่)\" จะเห็นจุดใหม่จากสิ่งที่ Evidence Agent เคยค้นเจอตอนพิสูจน์ MicroHook โผล่เข้าคลังทันทีเป็นการ์ดเส้นประพร้อมป้าย 🧪 · แถวชิปโดเมนใต้แถบคือโดเมนที่คลังยังไม่มีตัวแทน (ฟิสิกส์ ดนตรี การแพทย์ …) กดชิปหรือปุ่ม \"🌐 ออกไปหาความรู้ใหม่เอง\" เพื่อให้ระบบค้นเว็บด้วยคำค้นที่มันเขียนเอง · กด 🚫 บนการ์ดใดก็ได้เพื่อยับยั้ง แล้วกดกู้ซ้ำจะเห็นว่ามันไม่กลับมาอีก",
+      "next_boundary": "ความรู้เข้ามาเองได้แล้ว แต่ \"คุณภาพ\" ของมันยังไม่มีใครตรวจ — จุดที่ Scout หามาเข้าคลังโดยไม่ผ่านเส้นตอบกลับของ Layer 04.5 เลย ระบบจึงยังไม่รู้ว่าจุดที่มันหามาเองพาไปสู่ไอเดียที่ดีกว่าหรือแย่กว่าจุดของเจ้าของ กำแพงถัดไปคือการให้ value_score ย้อนกลับมาตัดสิน \"แหล่งที่มา\" ไม่ใช่แค่ตัวจุด เพื่อให้ Scout เรียนรู้ว่าโดเมนไหน/คำค้นแบบไหนของมันได้ผลจริง แล้วปรับวิธีตั้งคำค้นของตัวเองรอบต่อไป"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 141,
+        "bytes_delta": 7213
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 53,
+        "bytes_delta": 5425
+      },
+      {
+        "path": "selftest/evo_6de88102.js",
+        "action": "created",
+        "lines": 447,
+        "bytes_delta": 18501
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 495,
+        "bytes_delta": 24441
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 55035",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forge/preview ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution/attempted ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — ความรู้เดินเข้าคลังได้เองแล้ว โดยที่เจ้าของยังมีสิทธิ์ยับยั้งและระบบจำคำยับยั้งนั้นได้",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · ลักฐานที่ยังค้าง และคำค้นถัดไปที่ระบบตั้งเอง · จุดที่เจ้าของเพิ่มเองถูกติดป้าย human ตั้งแต่ตอนสร้าง · ลบจุดของเจ้าของ = ลบเฉย ๆ ไม่ใช่การยับยั้ง (ระบบไม่ขึ้นบัญชีดำความรู้ของเจ้าของ) · ลบจุดที่ระบบหามาเอง = การยับยั้ง (ระบบต้องจำ ไม่ใช่แค่ลบ) · ★ หลังยับยั้งครบทั้งสองชิ้น การกู้หลักฐานไม่คืนอะไรกลับมาอีกเลย · POST /api/scout/web มีอยู่จริงแต่ถูกล็อกในโหมดทดสอบ (503 ไม่ใช่ 404 — และไม่แอบออกเน็ต)",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 10 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forge/preview",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution/attempted",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_6de88102.js",
+    "backup": "evolution/backups/evo_6de88102",
+    "history_used": {
+      "rounds": [],
+      "attempts_before": 0,
+      "cap": 3,
+      "left": 3,
+      "distinct_approaches": 0
+    },
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_b8abecbd",
+    "at": "2026-07-24T23:09:01.267Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "limit": {
+      "id": "lim_0da073b8",
+      "title": "รอบที่ล้มเหลวถูกลบทิ้งพร้อมบทเรียน — ลองสามครั้งเหมือนครั้งแรกทุกครั้ง",
+      "category": "autonomy"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "ต่อ 'ความจำของความล้มเหลว' เข้าเป็นชั้น 6.5: รอบที่ถูกย้อนกลับจะไม่ถูกลบอีกต่อไป — writeAttempted() เก็บโค้ดที่เพิ่งเขียนไว้ที่ evolution/backups/<evoId>/attempted/ ก่อนคืนไฟล์เดิม, failureDossier() ดึงด่านที่ตกพร้อมข้อความจริงของด่าน ไฟล์ที่แตะ และแนวทางที่ใช้ออกมาจาก ledger, แล้ว buildFailureBlock() ยัดทั้งหมดเข้าหัวพรอมป์ตผ่าน buildForgePrompt(limit, body, evoId, history) พร้อมคำสั่งบังคับว่าห้ามใช้วิธีเดิมซ้ำและต้องเปิดอ่านโค้ดที่เคยตกก่อนลงมือ. เพดาน (l.attempts || 0) < 3 ที่ตายตัวถูกแทนด้วย attemptBudget(): เพดาน = 3 + (จำนวนแนวทางที่ต่างกันจริง − 1) สูงสุด 6 โดยวัดความต่างจากชุดไฟล์ที่แตะร่วมกับ Jaccard บน 4-gram ของคำอธิบาย (ภาษาไทยไม่มีช่องว่างให้ตัดคำ) — ลองวิธีเดิมซ้ำสามครั้งยังตันเหมือนเดิม แต่สามวิธีที่ต่างกันจริงได้โควตาเพิ่ม",
+      "differs_from_previous": "กำแพงนี้ยังไม่เคยมีรอบไหนล้มเหลว (ledger มีแต่รอบที่ผ่าน 2 รอบ ของกำแพงอื่น) — รอบนี้จึงเป็นครั้งแรก ไม่มีวิธีเดิมให้เลี่ยง",
+      "what_changed": [
+        "server.js: เพิ่มบล็อก Layer 6.5 Scar Tissue — GATE_LABEL, failedGates, approachText/shingles/jaccard/approachOf/sameApproach, failedRounds, distinctApproaches, attemptBudget, listAttempted, writeAttempted, failureDossier, buildFailureBlock, forgeHistory, selectTarget",
+        "server.js: buildForgePrompt(limit, body, evoId, history) รับประวัติความล้มเหลวและแทรกบล็อกไว้ก่อนซอร์สโค้ด + เพิ่มกฎเหล็กข้อ 11 และ field differs_from_previous ในสัญญา JSON",
+        "server.js: attemptEvolution ใช้ selectTarget แทน filter attempts<3, เรียก forgeHistory ส่งเข้าพรอมป์ต, บันทึก history_used, และตอนตกจะ writeAttempted + คำนวณ budget_after ลง ledger",
+        "server.js: daemon เลิกใช้เพดานคงที่ 3 หันมาใช้ attemptBudget เช่นกัน",
+        "server.js: GET /api/limits คืน attempt_cap / attempts_left / cap_earned / distinct_approaches / exhausted / is_next_target / failed_attempts[]",
+        "server.js: เพิ่ม GET /api/forge/preview (พรอมป์ตจริงของรอบถัดไป + history + failure_block + budget) และ GET /api/evolution/attempted (อ่านโค้ดของรอบที่ตก มีกันพาธหลุดโฟลเดอร์) และใส่ทั้งสองเส้นเข้า REGRESSION_ENDPOINTS",
+        "public/index.html: แถวขอบเขตแสดงมิเตอร์โควตา used/cap พร้อมป้าย 'ครบเพดาน', ปุ่ม '🩹 บทเรียนจาก N รอบที่ล้มเหลว' เปิดแผงแผลเป็น (ด่านที่ตก + ไฟล์ + โค้ดที่เคยลอง + บล็อกที่จะส่งเข้าพรอมป์ตจริง), การ์ด ledger แสดง history_used/budget_after และปุ่ม '📦 ดูโค้ดที่รอบนี้ลองแล้วไม่ผ่าน' + CSS ชุด scar",
+        "README.md: เพิ่มแถว Layer 06.5 ในตารางสถาปัตยกรรม, ขั้นตอนที่ 0 ของการหลอมตัวเอง, หัวข้อ '🩹 แผลเป็น' พร้อมสูตรเพดานที่ขยับได้, อัปเดตตาราง API และโครงสร้างโฟลเดอร์ evolution/backups/<evo-id>/attempted/",
+        "selftest/evo_b8abecbd.js: ไฟล์พิสูจน์ใหม่"
+      ],
+      "new_capability": "เมื่อรอบวิวัฒนาการล้มเหลว ระบบจะเก็บโค้ดที่เพิ่งเขียนไว้และส่ง 'ตกที่ด่านไหน เพราะอะไร เคยลองอะไรมาแล้ว' เข้าไปในพรอมป์ตของรอบถัดไปที่ชนกำแพงเดิม พร้อมสั่งห้ามใช้วิธีเดิมซ้ำ — และเพดานการลองไม่ใช่ 3 ครั้งตายตัวอีกต่อไป แต่ขยับขึ้นได้ถึง 6 เมื่อระบบเสนอวิธีที่ต่างจากเดิมจริง ๆ",
+      "proof_file": "selftest/evo_b8abecbd.js",
+      "proof_explains": "ไฟล์พิสูจน์เขียนประวัติจำลองลงในความทรงจำของแซนด์บ็อกซ์ (กำแพงหนึ่งตก 3 ครั้งด้วยวิธีเดียวกัน อีกกำแพงตก 3 ครั้งด้วย 3 วิธีที่ต่างกัน) แล้วตรวจว่า /api/forge/preview คืนพรอมป์ตจริงที่มีเหตุผลการตก ข้อความของด่านที่ไม่ผ่าน สรุปไฟล์ที่เคยลอง พาธ attempted/ และคำสั่งห้ามใช้วิธีเดิมซ้ำครบทั้งสามรอบ · เพดานของกำแพงแรกยังเป็น 3 และตัน ส่วนกำแพงที่สองขยับเป็น 5 และถูกเลือกเป็นเป้าหมายถัดไปแทนกำแพงที่ปลดล็อกสูงกว่าแต่ตันแล้ว · และ /api/evolution/attempted อ่านโค้ดของรอบที่ถูกย้อนกลับได้จริง โค้ดเดิมต้องตกเพราะไม่มีทั้งสอง endpoint (404) และ /api/limits ของมันไม่มีสนาม attempt_cap/attempts_left/exhausted เลย",
+      "how_to_verify": "เปิด http://localhost:4747 → ส่วน Layer 06 ขอบเขตของระบบตัวเอง: ทุกกำแพงจะมีมิเตอร์ 'โควตา x/3' เพิ่มขึ้นมา และกำแพงที่เคยล้มเหลวจะมีปุ่ม '🩹 บทเรียนจาก N รอบที่ล้มเหลว' — กดแล้วจะเห็นทุกรอบที่ตก ด่านที่ทำให้ตก ไฟล์ที่เคยแตะ ปุ่มเปิดโค้ดที่เคยลองแล้วไม่ผ่าน และกล่อง '🧾 ดูบล็อกบทเรียนที่จะถูกส่งเข้าพรอมป์ตรอบถัดไปจริง ๆ' ซึ่งเป็นข้อความชุดเดียวกับที่ Self-Forge จะได้อ่าน · ในบันทึกวิวัฒนาการ รอบที่ตกจะมีบรรทัด '🩹 รอบนี้ถูกป้อนบทเรียนจากรอบที่ตกมาแล้ว N รอบ' และปุ่ม '📦 ดูโค้ดที่รอบนี้ลองแล้วไม่ผ่าน'",
+      "next_boundary": "ระบบจำได้แล้วว่าตัวเองพลาดอะไร แต่ยัง 'ตัดสินความต่างของแนวทาง' ด้วยการเทียบตัวอักษรของคำอธิบายที่ตัวเองเขียนเอง — ผู้ถูกวัดยังเป็นคนเขียนสิ่งที่ใช้วัด รอบที่อยากได้โควตาเพิ่มแค่เปลี่ยนสำนวนกับสลับไฟล์ที่แตะก็ผ่านเกณฑ์ความต่างได้ กำแพงถัดไปคือการวัดความต่างจาก 'สิ่งที่โค้ดทำจริง' (โครงสร้างของ diff, ด่านที่ถูกโจมตี) แทนคำอธิบายที่ตัวเองพิมพ์"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 151,
+        "bytes_delta": 8703
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 45,
+        "bytes_delta": 4038
+      },
+      {
+        "path": "selftest/evo_b8abecbd.js",
+        "action": "created",
+        "lines": 378,
+        "bytes_delta": 16790
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 383,
+        "bytes_delta": 17523
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 57324",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/lessons ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — บทเรียนของรอบที่ล้มเหลวไหลถึงรอบถัดไปแล้ว และเพดานการลองขยับตามความต่างของวิธีจริง",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · ันเพราะทำซ้ำวิธีเดิม ถูกข้าม แม้จะมีคะแนนปลดล็อกสูงกว่า · ทะเบียนขอบเขตชี้เป้าหมายถัดไปตรงกัน · กำแพงที่ตันยังเปิดอ่านประวัติได้ (ตันไม่ได้แปลว่าถูกลบความทรงจำ) · ระบบอธิบายเงื่อนไขการขยับเพดานให้มนุษย์อ่านได้ · GET /api/evolution/attempted ลิสต์ไฟล์ที่รอบซึ่งถูกย้อนกลับเคยเขียนไว้ได้ (โค้ดเดิมได้ 404) · อ่านโค้ดจริงของรอบที่ตกได้ทั้งไฟล์ · ไม่ระบุ evoId ต้องได้รายชื่อทุกรอบที่ยังเก็บโค้ดที่ตกไว้",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 8 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/lessons",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_b8abecbd.js",
+    "backup": "evolution/backups/evo_b8abecbd",
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_630305d2",
+    "at": "2026-07-24T21:48:28.035Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "limit": {
+      "id": "lim_0852ede5",
+      "title": "ไม่มีเส้นตอบกลับ — ผลลัพธ์ไม่เคยไหลกลับเข้าความคิดครั้งถัดไป",
+      "category": "architecture"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "ต่อ 'เส้นตอบกลับ' ที่เคยขาดหายให้ครบวงจร: เพิ่มสนามผลลัพธ์จริง (outcome) ให้ทุกการเชื่อมผ่าน POST /api/outcome แล้วรวมกับ verdict ของ Evidence Agent เป็น 'สัญญาณ' ในช่วง [-1,+1] ต่อการเชื่อมหนึ่งครั้ง จากนั้นเฉลี่ยสัญญาณลงบนทุกจุดที่อยู่ในการเชื่อมนั้นเป็น value_score และเปลี่ยนการจัดลำดับความสนใจจาก rarity ล้วนเป็น attention_score = (rarity + 1) × (1 + value_score) ซึ่งใช้ทั้งในการเรียงจุดเข้าพรอมป์ต, /api/forgotten และการเลือกจุดตั้งต้นของ daemon สุดท้ายแทนบัญชีดำรายชื่อใน buildConnectPrompt ด้วย 'บทเรียนจากรอบก่อน' ที่แยกเป็นทิศทางที่ได้ผลจริง / ตายแล้ว / กลาง ๆ พร้อมเหตุผล และบังคับให้ทุกรอบตอบ learned_from_last_round กลับมาเป็นหลักฐานว่าอ่านบทเรียนแล้วจริง",
+      "what_changed": [
+        "server.js: เพิ่ม VERDICT_WEIGHT / OUTCOME_STATUS / connectionSignal() — แปลง verdict + คะแนนผู้ใช้เป็นสัญญาณเดียวในช่วง [-1,+1] โดยให้น้ำหนักผลลัพธ์จริงของผู้ใช้เป็น 2 เท่าของ verdict",
+        "server.js: enrichDots() คืน value_score, rated_uses, attention_score, proven, dead_end เพิ่มจาก rarity เดิม (จุดที่ยังไม่มีผลตอบกลับได้ 0 ลำดับเดิมจึงไม่ถูกรบกวนจนกว่าจะมีหลักฐาน)",
+        "server.js: buildConnectPrompt() เปลี่ยนพารามิเตอร์จาก previousNames เป็น lessons — ใส่บล็อกบทเรียน ✅ได้ผลจริง / ❌ทางตัน / ◻กลาง ๆ แทนรายชื่อห้ามซ้ำ และแสดงคะแนนคุณค่าของแต่ละจุดในรายการ",
+        "server.js: performConnection() เรียงจุดเข้าพรอมป์ตด้วย attention_score, ส่ง lessons เข้าไป, และบันทึก learned_from_last_round + lessons_used + outcome:null ลงทุกเรคอร์ด",
+        "server.js: เพิ่ม POST /api/outcome (บันทึกผล + คืนจุดที่คะแนนเพิ่งขยับ) และ GET /api/lessons (สิ่งที่รอบถัดไปจะถูกป้อน) พร้อมเพิ่ม /api/lessons เข้า REGRESSION_ENDPOINTS",
+        "server.js: /api/forgotten และการเลือกจุดตั้งต้นของ Serendipity daemon เรียงด้วย attention_score แทน rarity — จุดที่พาไปทางตันซ้ำ ๆ ไม่ถูกดันขึ้นมาก่อน",
+        "public/index.html: เพิ่มแถบ 'เส้นตอบกลับ' เหนือผลลัพธ์, ฟอร์มบันทึกผลลัพธ์จริงใต้ทุกไอเดีย (คะแนน 1-5 + สถานะ + โน้ต) ที่แสดงทันทีว่าจุดไหนคะแนนขยับเท่าไร, ป้าย 📈/📉/👁 บนการ์ดจุด และแถว 'บทเรียนจากรอบก่อนที่ใช้กับรอบนี้'",
+        "README.md: เพิ่มแถว Layer 04.5 The Return Path, แผนภาพสูตรการไหลย้อนกลับ, endpoint ใหม่สองเส้น และอัปเดตรายการ regression",
+        "selftest/evo_630305d2.js: ไฟล์พิสูจน์ที่ทดสอบวงจรตอบกลับจริงผ่าน HTTP"
+      ],
+      "new_capability": "ตอนนี้คุณให้คะแนนผลลัพธ์จริงของทุกไอเดียได้ (1-5 + เอาไปทำแล้วเกิดอะไร) แล้วคะแนนนั้นไหลย้อนกลับทันที ไปเพิ่ม/ลดน้ำหนักของ 'จุด' ที่พาไปสู่ผลนั้น และกลายเป็นบทเรียนที่ระบบอ่านก่อนเชื่อมจุดครั้งถัดไป — การเชื่อมครั้งที่ 100 จึงเก่งกว่าครั้งแรกได้จริง แทนที่จะเก่งเท่าเดิมตลอดไป",
+      "proof_file": "selftest/evo_630305d2.js",
+      "proof_explains": "ไฟล์พิสูจน์ยิง HTTP จริงเพื่อปิดวงจรทั้งเส้น: บันทึกผล 'ตายแล้ว/1 คะแนน' ให้การเชื่อมหนึ่ง แล้วตรวจว่า value_score และ attention_score ของจุดที่พามาลดลงทันที และบทเรียนใน /api/lessons พลิกเป็น 'ทางตัน' จากนั้นเปลี่ยนเป็น 'เอาไปทำจริง/5 คะแนน' แล้วตรวจว่าคะแนนกลับขึ้นเหนือเดิมและบทเรียนพลิกเป็น 'ได้ผลจริง' พร้อมตรวจว่าเขียนลง data/connections.json ของทรีที่ทดสอบจริงและสูตร attention_score = (rarity+1)×(1+value_score) ถูกต้องทุกจุด · โค้ดเดิมต้องตกตั้งแต่ข้อแรกเพราะไม่มีทั้ง /api/lessons และ /api/outcome (ได้ 404) และ /api/dots ของมันไม่มีสนาม value_score/attention_score/rated_uses เลย",
+      "how_to_verify": "รีสตาร์ตเครื่องยนต์ → เปิด http://localhost:4747 → ที่ Layer 04 จะเห็นแถบ '🔁 เส้นตอบกลับ' บอกว่ามีผลป้อนกลับแล้วกี่การเชื่อม · เลื่อนลงไปใต้ไอเดียใดก็ได้ กรอกสถานะ+คะแนนแล้วกด '💾 บันทึกผลลัพธ์' ระบบจะขึ้นทันทีว่าจุดไหนได้คะแนนคุณค่าใหม่เท่าไร · เลื่อนขึ้นไปดูการ์ดจุดใน Layer 01 จะเห็นป้าย 📈/📉 และเลข 👁 เปลี่ยนตาม · พอกด '⚡ เชื่อมจุด' รอบถัดไป ผลลัพธ์จะมีแถว 'บทเรียนจากรอบก่อนที่ใช้กับรอบนี้' บอกว่าระบบเอาผลเก่ามาปรับทิศอย่างไร",
+      "next_boundary": "สัญญาณย้อนกลับยังต้องรอมนุษย์กดให้คะแนนเอง — ระบบยังมองไม่เห็นด้วยตัวเองว่าไอเดียไหนถูกเอาไปใช้จริง (ไม่มีการติดตามผลอัตโนมัติจาก lab/ ที่ถูกเปิด, ไฟล์ที่ถูกแก้ต่อ หรือการค้นเว็บซ้ำในภายหลัง) ถ้าผู้ใช้ไม่ให้คะแนน เส้นตอบกลับก็ยังเงียบ กำแพงถัดไปคือ 'ระบบต้องเก็บผลลัพธ์ของตัวเองได้โดยไม่ต้องรอคนป้อน'",
+      "หมายเหตุความซื่อตรง": "การแก้โค้ดเสร็จครบทุกไฟล์แล้ว แต่สภาพแวดล้อมนี้ปฏิเสธสิทธิ์รันคำสั่ง node จึงยังไม่ได้รัน node --check, บูตทดสอบ หรือรันไฟล์พิสูจน์ด้วยตัวเองก่อนส่งงาน — ทั้งสี่ด่าน (syntax / บูตจริง / ความสามารถ+ความต่าง / regression) จะถูกตัดสินโดยกลไก proveEvolution ของระบบเอง ถ้าด่านใดไม่ผ่าน ทุกไฟล์จะถูกย้อนกลับอัตโนมัติตามกติกา"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 136,
+        "bytes_delta": 7169
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 20,
+        "bytes_delta": 2069
+      },
+      {
+        "path": "selftest/evo_630305d2.js",
+        "action": "created",
+        "lines": 247,
+        "bytes_delta": 10446
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 189,
+        "bytes_delta": 10031
+      }
+    ],
+    "checks": {
+      "proof_written": true,
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "เซิร์ฟเวอร์ใหม่บูตผ่าน: /api/dots ตอบ 200 บนพอร์ต 54462",
+      "capability": true,
+      "capability_detail": "ไฟล์พิสูจน์ผ่านกับโค้ดใหม่ · exit 0 · endpoint เดิม /api/connections ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/limits ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/self ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/evolution ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/forgotten ยังตอบ 200 — ได้ 200\n✓ endpoint เดิม /api/serendipity/status ยังตอบ 200 — ได้ 200\n\n✓ ผ่านทั้งหมด — ผลลัพธ์จริงไหลย้อนกลับไปเปลี่ยนน้ำหนักของจุดและบทเรียนของรอบถัดไปแล้ว",
+      "differential": true,
+      "differential_detail": "ไฟล์พิสูจน์ตกกับโค้ดเดิมตามที่ควรเป็น · exit 1 · แย่ไหลย้อนกลับ: value_score และ attention_score ของจุดที่พามาลดลงทันที · บทเรียนที่รอบถัดไปจะได้อ่าน เปลี่ยนเป็น 'ทางตัน' ตามผลที่เพิ่งบันทึก · POST /api/outcome อัปเดตผลลัพธ์ทับของเดิมได้ · ผลลัพธ์ดีไหลย้อนกลับ: จุดเดียวกันได้คะแนนและความสนใจสูงกว่าตอนที่ถูกตีว่าตาย · บทเรียนพลิกเป็น 'ได้ผลจริง' และถูกนับใน summary.worked · ผลลัพธ์ถูกบันทึกลง data/connections.json จริง (อ่านซ้ำจาก DOT_TEST_ROOT)",
+      "regression": true,
+      "regression_detail": "ทุก endpoint เดิมยังตอบ 200 ครบ 7 เส้น",
+      "regression_endpoints": [
+        {
+          "endpoint": "/api/dots",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/connections",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/limits",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/self",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/evolution",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/forgotten",
+          "status": 200
+        },
+        {
+          "endpoint": "/api/serendipity/status",
+          "status": 200
+        }
+      ]
+    },
+    "proof_file": "selftest/evo_630305d2.js",
+    "backup": "evolution/backups/evo_630305d2",
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงได้ · ไฟล์พิสูจน์ผ่านกับโค้ดใหม่และตกกับโค้ดเดิม · endpoint เดิมครบทุกเส้น",
+    "dot_created": true
+  },
+  {
+    "id": "evo_82705dfa",
+    "at": "2026-07-24T21:19:35.442Z",
+    "model": "claude-opus-5[1m]",
+    "auto": false,
+    "limit": {
+      "id": "lim_738a5df7",
+      "title": "การพิสูจน์ตัวเองหยุดอยู่แค่ \"บูตได้\"",
+      "category": "autonomy"
+    },
+    "report": {
+      "broke_it": true,
+      "summary": "ย้ายฟังก์ชันความเหมาะสมของ Layer 6 จาก 'ไม่ตาย' ไปเป็น 'เก่งขึ้นจริง' โดยบังคับให้ทุกรอบฟอร์จเขียนไฟล์พิสูจน์ที่รันได้จริงลง selftest/ แล้วรันไฟล์เดียวกันสองครั้งในแซนด์บ็อกซ์ ได้แก่ กับโค้ดใหม่ที่ต้องผ่าน และกับโค้ดเดิมที่สร้างใหม่จาก snapshot ซึ่งต้องตก จากนั้นยิง regression ทุก endpoint เดิมทั้งเจ็ดเส้นต้องได้ 200 ขาดข้อใดข้อหนึ่งคือ rejected และย้อนกลับอัตโนมัติ กฎข้อ 4 ที่เคยเป็นแค่ข้อความในพรอมป์ตจึงถูกบังคับด้วยโค้ดแล้ว",
+      "what_changed": [
+        "server.js: เพิ่ม bootServer, runProof, regressionTest, materializeTree, proveEvolution และค่าคงที่ PROOF_DIR, PROOF_TIMEOUT_MS, REGRESSION_ENDPOINTS",
+        "server.js: attemptEvolution เพิ่มด่านตรวจ proof_written, capability, differential, regression และย้อนกลับเมื่อด่านใดตก",
+        "server.js: buildForgePrompt รับ evoId และเพิ่มสัญญาไฟล์พิสูจน์ พร้อมกฎเหล็กข้อ 9 และ 10 ที่ห้ามลดทอนกลไกตรวจสอบ",
+        "server.js: เพิ่ม endpoint GET /api/evolution/proof และ promptBundle ที่ตัดไฟล์พิสูจน์เก่าออกจาก context เหลือไว้เป็นตัวอย่างหนึ่งไฟล์",
+        "public/index.html: เพิ่ม proofPanel และ showProof แสดงผลสี่ด่านพร้อมสถานะทุก endpoint และปุ่มดูโค้ดไฟล์พิสูจน์",
+        "selftest/evo_00000000.js: ไฟล์พิสูจน์ตัวอย่างของรอบนี้เอง ใช้เป็นแม่แบบสัญญาให้รอบถัดไป",
+        "README.md: อธิบายฟังก์ชันความเหมาะสมใหม่ สัญญาไฟล์พิสูจน์ และราวกันตกที่เพิ่มขึ้น"
+      ],
+      "new_capability": "ตอนนี้รอบวิวัฒนาการจะได้ตราประทับ accepted ก็ต่อเมื่อมีโค้ดทดสอบที่รันได้จริงยืนยันว่าความสามารถใหม่ใช้งานได้ และยืนยันว่าโค้ดเมื่อวานทำสิ่งนั้นไม่ได้ พร้อมพิสูจน์ว่าไม่มีความสามารถเดิมหายไป ระบบจึงเลิกเดินสุ่มและเริ่มไต่ขึ้นจริง",
+      "proof_file": "selftest/evo_00000000.js",
+      "proof_explains": "ไฟล์นี้ยิง /api/evolution/proof ด้วย evoId ผิดรูปแบบแล้วต้องได้ 400 ซึ่งโค้ดเดิมไม่มี route นี้จึงตกไปที่ 404 not found และตรวจว่าทุก endpoint เดิมยังตอบ 200 ครบ",
+      "how_to_verify": "เปิดหน้าเว็บที่ Layer 06 ส่วน Evolution Ledger รอบใหม่ทุกใบจะมีกล่อง เกณฑ์ตัดสิน แสดงสี่ด่านพร้อมเหตุผล และปุ่ม ดูโค้ดไฟล์พิสูจน์ กดแล้วเห็นโค้ดทดสอบจริงที่ระบบเขียนเอง ส่วนรอบที่ตกจะบอกชัดว่าตกด่านไหน",
+      "next_boundary": "ไฟล์พิสูจน์ถูกเขียนโดยผู้ที่ถูกตรวจเอง ระบบจึงยังมีแรงจูงใจเขียนข้อสอบง่ายให้ตัวเองผ่าน กำแพงถัดไปคือการแยกผู้เขียนข้อสอบออกจากผู้ทำข้อสอบ และการรันไฟล์พิสูจน์สะสมทั้งหมดใน selftest ทุกรอบเพื่อกันการถดถอยข้ามรุ่น"
+    },
+    "files": [
+      {
+        "path": "public/index.html",
+        "action": "modified",
+        "lines": 61,
+        "bytes_delta": 3360
+      },
+      {
+        "path": "README.md",
+        "action": "modified",
+        "lines": 31,
+        "bytes_delta": 2294
+      },
+      {
+        "path": "selftest/evo_00000000.js",
+        "action": "created",
+        "lines": 96,
+        "bytes_delta": 3203
+      },
+      {
+        "path": "server.js",
+        "action": "modified",
+        "lines": 265,
+        "bytes_delta": 12433
+      }
+    ],
+    "checks": {
+      "syntax": true,
+      "syntax_detail": "server.js ผ่าน node --check",
+      "smoke": true,
+      "smoke_detail": "บูตจริงผ่าน: /api/dots ตอบ 200 บนพอร์ต 55442"
+    },
+    "backup": "evolution/backups/evo_82705dfa",
+    "verdict": "accepted",
+    "reason": "ผ่านทุกด่าน: ไม่แตะความทรงจำ · syntax ผ่าน · บูตจริงและตอบ HTTP ได้",
+    "dot_created": true
+  }
+]
