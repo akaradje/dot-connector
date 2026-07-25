@@ -2,9 +2,9 @@
   "started_at": "2026-07-25T05:10:35.081Z",
   "endpoints": {
     "/api/self": {
-      "hits": 13,
+      "hits": 20,
       "first_hit": "2026-07-25T05:10:46.317Z",
-      "last_hit": "2026-07-25T08:02:44.289Z"
+      "last_hit": "2026-07-25T13:40:59.709Z"
     },
     "/api/transcend": {
       "hits": 8,
@@ -12,54 +12,54 @@
       "last_hit": "2026-07-25T07:29:41.639Z"
     },
     "/api/dots": {
-      "hits": 40,
+      "hits": 47,
       "first_hit": "2026-07-25T05:13:22.590Z",
-      "last_hit": "2026-07-25T08:03:33.482Z"
+      "last_hit": "2026-07-25T13:40:59.641Z"
     },
     "/api/connections": {
-      "hits": 3,
+      "hits": 10,
       "first_hit": "2026-07-25T05:13:22.599Z",
-      "last_hit": "2026-07-25T07:36:42.187Z"
+      "last_hit": "2026-07-25T13:40:59.665Z"
     },
     "/api/lessons": {
-      "hits": 3,
+      "hits": 7,
       "first_hit": "2026-07-25T05:13:22.604Z",
-      "last_hit": "2026-07-25T07:36:42.194Z"
+      "last_hit": "2026-07-25T13:37:08.368Z"
     },
     "/api/limits": {
-      "hits": 3,
+      "hits": 15,
       "first_hit": "2026-07-25T05:13:23.045Z",
-      "last_hit": "2026-07-25T07:36:42.270Z"
+      "last_hit": "2026-07-25T13:40:59.672Z"
     },
     "/api/forgotten": {
-      "hits": 40,
+      "hits": 47,
       "first_hit": "2026-07-25T05:13:23.057Z",
-      "last_hit": "2026-07-25T08:03:33.490Z"
+      "last_hit": "2026-07-25T13:40:59.990Z"
     },
     "/api/scout/status": {
-      "hits": 40,
+      "hits": 44,
       "first_hit": "2026-07-25T05:13:23.060Z",
-      "last_hit": "2026-07-25T08:03:33.496Z"
+      "last_hit": "2026-07-25T13:37:08.497Z"
     },
     "/api/evolution": {
-      "hits": 4,
+      "hits": 11,
       "first_hit": "2026-07-25T05:13:23.128Z",
-      "last_hit": "2026-07-25T07:36:42.287Z"
+      "last_hit": "2026-07-25T13:40:59.952Z"
     },
     "/api/serendipity/status": {
-      "hits": 40,
+      "hits": 49,
       "first_hit": "2026-07-25T05:13:23.130Z",
-      "last_hit": "2026-07-25T08:03:33.493Z"
+      "last_hit": "2026-07-25T13:41:00.013Z"
     },
     "/api/consolidation/preview": {
-      "hits": 8,
+      "hits": 12,
       "first_hit": "2026-07-25T05:13:23.361Z",
-      "last_hit": "2026-07-25T07:45:15.565Z"
+      "last_hit": "2026-07-25T13:37:08.644Z"
     },
     "/api/forge/preview": {
-      "hits": 2,
+      "hits": 3,
       "first_hit": "2026-07-25T05:18:26.765Z",
-      "last_hit": "2026-07-25T05:18:35.602Z"
+      "last_hit": "2026-07-25T13:19:56.398Z"
     },
     "/api/consolidate": {
       "hits": 1,
@@ -72,24 +72,54 @@
       "last_hit": "2026-07-25T06:45:08.694Z"
     },
     "/api/adoption": {
-      "hits": 2,
+      "hits": 8,
       "first_hit": "2026-07-25T07:36:41.248Z",
-      "last_hit": "2026-07-25T07:36:42.317Z"
+      "last_hit": "2026-07-25T13:41:00.080Z"
     },
     "/api/forge/loop": {
-      "hits": 2,
+      "hits": 6,
       "first_hit": "2026-07-25T07:36:41.299Z",
-      "last_hit": "2026-07-25T07:36:42.312Z"
+      "last_hit": "2026-07-25T13:37:08.459Z"
     },
     "/api/knowledge/preview": {
-      "hits": 7,
+      "hits": 11,
       "first_hit": "2026-07-25T07:36:41.305Z",
-      "last_hit": "2026-07-25T08:03:33.501Z"
+      "last_hit": "2026-07-25T13:37:08.505Z"
     },
     "/api/endpoints": {
-      "hits": 1,
+      "hits": 2,
       "first_hit": "2026-07-25T07:45:31.698Z",
-      "last_hit": "2026-07-25T07:45:31.698Z"
+      "last_hit": "2026-07-25T13:16:21.771Z"
+    },
+    "/api/autopilot": {
+      "hits": 89,
+      "first_hit": "2026-07-25T13:02:06.583Z",
+      "last_hit": "2026-07-25T13:41:08.921Z"
+    },
+    "/api/forge/knowledge": {
+      "hits": 6,
+      "first_hit": "2026-07-25T13:03:36.044Z",
+      "last_hit": "2026-07-25T13:41:00.142Z"
+    },
+    "/api/autopilot/stop": {
+      "hits": 1,
+      "first_hit": "2026-07-25T13:08:35.305Z",
+      "last_hit": "2026-07-25T13:08:35.305Z"
+    },
+    "/api/forge/insight": {
+      "hits": 1,
+      "first_hit": "2026-07-25T13:20:20.583Z",
+      "last_hit": "2026-07-25T13:20:20.583Z"
+    },
+    "/api/limits/merge/dryrun": {
+      "hits": 7,
+      "first_hit": "2026-07-25T13:30:04.589Z",
+      "last_hit": "2026-07-25T13:30:04.606Z"
+    },
+    "/api/limits/events": {
+      "hits": 5,
+      "first_hit": "2026-07-25T13:30:04.611Z",
+      "last_hit": "2026-07-25T13:37:11.963Z"
     }
   }
 }

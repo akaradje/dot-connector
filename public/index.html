@@ -54,6 +54,55 @@
   .layer-head h2 { font-size: 1.15rem; font-weight: 800; }
   .layer-head .hint { color: var(--ink-faint); font-size: 0.85rem; margin-left: auto; }
 
+  /* ---- Layer 09 · The Ignition ---- */
+  #ignition {
+    max-width: 60rem; margin: 1.6rem auto 0; border-radius: 10px;
+    padding: 0.9rem 1.2rem; border: 1px solid var(--line); background: var(--surface);
+    transition: border-color 0.25s, background 0.25s;
+    /* header is centred; a control panel must not be */
+    text-align: left;
+  }
+  #ignition.on { border-color: var(--ok); background: linear-gradient(90deg, rgba(107,169,122,0.10), transparent); }
+  #ignition.off { border-color: var(--line); }
+  .ign-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .ign-switch {
+    flex: none; min-width: 12.5rem; cursor: pointer;
+    font-family: inherit; font-weight: 700; font-size: 0.95rem;
+    padding: 0.6rem 1.1rem; border-radius: 99px; border: 1px solid var(--line);
+    background: var(--ground); color: var(--ink); transition: all 0.18s;
+  }
+  .ign-switch.start { border-color: var(--ok); color: var(--ok); }
+  .ign-switch.start:hover { background: var(--ok); color: #0C140E; }
+  .ign-switch.stop { border-color: var(--amber); color: var(--amber); }
+  .ign-switch.stop:hover { background: var(--amber); color: #1A1408; }
+  .ign-switch:disabled { opacity: 0.5; cursor: wait; }
+  .ign-text { flex: 1 1 16rem; min-width: 0; }
+  .ign-title { font-weight: 700; font-size: 0.95rem; }
+  .ign-sub { font-size: 0.8rem; color: var(--ink-faint); margin-top: 0.15rem; line-height: 1.5; }
+  .ign-switches {
+    margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.6rem;
+  }
+  .ign-cap {
+    display: flex; gap: 0.65rem; align-items: flex-start;
+    border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem 0.75rem;
+    background: var(--ground); cursor: pointer;
+  }
+  .ign-cap.armed { border-color: var(--ok); }
+  .ign-cap.danger.armed { border-color: var(--danger); background: rgba(201,106,91,0.08); }
+  .ign-cap.locked { opacity: 0.45; cursor: not-allowed; }
+  .ign-cap input { margin-top: 0.2rem; accent-color: var(--amber); }
+  .ign-cap > span { display: block; min-width: 0; }
+  .ign-cap .cap-name { display: block; font-size: 0.88rem; font-weight: 700; }
+  .ign-cap .cap-why { display: block; font-size: 0.76rem; color: var(--ink-faint); margin-top: 0.2rem; line-height: 1.5; }
+  .ign-cap .cap-when { display: block; font-size: 0.74rem; color: var(--ink-soft); margin-top: 0.35rem; }
+  .ign-cli {
+    margin-top: 0.8rem; padding: 0.55rem 0.8rem; border-radius: 6px;
+    border: 1px solid var(--danger); background: rgba(201,106,91,0.10);
+    font-size: 0.82rem; color: var(--ink-soft); line-height: 1.55;
+  }
+  .ign-cli code { color: var(--amber); font-family: "Cascadia Code", Consolas, monospace; }
+
   /* ---- Serendipity banner ---- */
   #serendipity {
     display: none;
@@ -540,15 +589,46 @@
   .kn-round .why { color: var(--ink-faint); font-size: 0.78rem; margin-top: 0.25rem; word-break: break-word; }
   .dot-card.distilled { border-left: 2px solid var(--dot-b); }
 
+  /* The changelog used to be the first screen of a tool people open every day. It is
+     history, and history folds. */
+  header details.changelog { max-width: 52rem; margin: 0.4rem auto 0; text-align: left; }
+  header details.changelog summary {
+    cursor: pointer; list-style: none; text-align: center;
+    font-size: 0.82rem; color: var(--ink-faint); padding: 0.3rem;
+  }
+  header details.changelog summary:hover { color: var(--amber); }
+  header details.changelog p { font-size: 0.84rem; line-height: 1.75; margin-top: 0.4rem; }
+
+  .limit-row.dormant { opacity: 0.62; border-left-color: var(--ink-faint); }
+
   footer { border-top: 1px solid var(--line); text-align: center; padding: 1.6rem; color: var(--ink-faint); font-size: 0.8rem; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="mono">Connecting the Dots · At Scale · Self-Forging v4 · The Scout · The Distiller · The Self-Connector · Opus 5</div>
+  <div class="mono">Connecting the Dots · At Scale · Self-Forging v5 · The Scout · The Distiller · The Self-Connector · The Ignition · The RemLedger · Opus 5</div>
   <h1>🔗 The Dot-Connector AI</h1>
-  <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง<br><b style="color:var(--amber)">และเมื่อเจอเพดานของตัวเอง มันเขียนโค้ดของตัวเองใหม่เพื่อทำลายเพดานนั้น</b><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--amber)">📈 ใหม่ (Layer 06.8): มันเลิกตัดสินตัวเองแค่ที่วินาทีที่โค้ดเขียนเสร็จ — ทุกรอบขยายต้องประกาศ "เส้นทางที่ความสามารถนี้จะถูกใช้ผ่าน" แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะให้คะแนนรอบนั้นด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ · รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลง</span><br><span style="color:var(--dot-a)">🧠 ใหม่ (Layer 06.9): เครื่องมือเชื่อมจุดเลิกลืมจุดของตัวเองตอนเขียนโค้ดตัวเอง — รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน · คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่าช่วยทำลายกำแพงได้จริงหรือไม่</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
+  <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง<br><b style="color:var(--amber)">และเมื่อเจอเพดานของตัวเอง มันเขียนโค้ดของตัวเองใหม่เพื่อทำลายเพดานนั้น</b></p>
+  <details class="changelog">
+    <summary>อ่านว่าแต่ละชั้นใหม่ทำอะไรได้บ้าง (Layer 06.8 · 06.9 · 07 · 08 · 09 · 10)</summary>
+    <p><span style="color:var(--ok)">🔑 ใหม่ (Layer 09 · The Ignition): เครื่องยนต์มีสวิตช์กุญแจแล้ว — ค่าตั้งต้นคือ<b>หยุด</b> ไม่มีอะไรทำงานตามนาฬิกาจนกว่าคุณจะกดเปิด และ Self-Forge ต้องติดอาวุธแยกอีกชั้นเสมอ · ทุกปุ่มยังกดได้ตอนเครื่องยนต์หยุด สิ่งที่ปิดคือนาฬิกา ไม่ใช่ความสามารถ · มีปุ่มหยุดฉุกเฉินที่ฆ่างาน AI ที่ค้างอยู่ได้จริง แม้แต่รอบหลอมตัวเองกลางคัน</span><br><span style="color:var(--dot-b)">🧲 ใหม่ (Layer 10 · The RemLedger — <b>ชั้นนี้ระบบออกแบบเอง</b>): เดิมทุกครั้งที่มันส่องกระจก ทะเบียนกำแพงถูกเขียนทับทั้งไฟล์ — ข้อที่ยังจริงอยู่แต่ไม่ถูกเอ่ยถึงหายไปพร้อมประวัติความล้มเหลว และกำแพงเดิมที่ได้ id ใหม่กลายเป็นกำแพงที่ "ไม่เคยล้มเหลว" · ตอนนี้ความเงียบไม่ใช่การลบ (remanence) ต้องเงียบครบ 3 รอบถึงจะหลับ และหลับ ≠ หาย · กำแพงถูกจับคู่จากลายเซ็นเชิงโครงสร้าง ไม่ใช่จากฉลากที่ออกใหม่ทุกครั้ง</span><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--amber)">📈 ใหม่ (Layer 06.8): มันเลิกตัดสินตัวเองแค่ที่วินาทีที่โค้ดเขียนเสร็จ — ทุกรอบขยายต้องประกาศ "เส้นทางที่ความสามารถนี้จะถูกใช้ผ่าน" แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะให้คะแนนรอบนั้นด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ · รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลง</span><br><span style="color:var(--dot-a)">🧠 ใหม่ (Layer 06.9): เครื่องมือเชื่อมจุดเลิกลืมจุดของตัวเองตอนเขียนโค้ดตัวเอง — รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน · คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่าช่วยทำลายกำแพงได้จริงหรือไม่</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
+  </details>
+  <!-- Layer 09 · The Ignition: nothing on a clock runs until this is switched on -->
+  <div id="ignition" class="off">
+    <div class="ign-row">
+      <button class="ign-switch" id="ignBtn" onclick="toggleIgnition(this)">…</button>
+      <div class="ign-text">
+        <div class="ign-title" id="ignTitle">กำลังอ่านสถานะเครื่องยนต์…</div>
+        <div class="ign-sub" id="ignSub"></div>
+      </div>
+      <button class="btn small ghost" id="ignStopBtn" onclick="emergencyStop(this)" style="display:none">🛑 หยุดงานที่กำลังทำอยู่</button>
+      <button class="btn small ghost" id="ignDetailBtn" onclick="toggleIgnDetail(this)">⚙ ตั้งค่าว่าให้มันทำอะไรเองได้บ้าง</button>
+    </div>
+    <div class="ign-switches" id="ignSwitches" style="display:none"></div>
+    <div class="ign-cli" id="ignCli" style="display:none"></div>
+  </div>
+
   <div id="serendipity" class="on">
     <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
       <span class="mono">Serendipity Engine · ทำงานเบื้องหลัง</span>
@@ -1139,19 +1219,209 @@ async function restoreKnowledge(roundId, btn) {
   }
 }
 
+/* ---------- Layer 09 · The Ignition ----------
+ * The one control on this page whose job is to make the engine do nothing. Everything else
+ * here starts something; this decides whether anything may start without you. */
+const IGN_CAPS = [
+  {
+    key: "connect",
+    icon: "⚡",
+    name: "เชื่อมจุดเอง",
+    why: "เก็บเกี่ยว inbox แล้วสั่งรอบเชื่อมจุด (Opus) เองเมื่อมีจุดใหม่ หรือมีจุดกำลังจะถูกลืม",
+  },
+  {
+    key: "scout",
+    icon: "🌐",
+    name: "The Scout ออกไปค้นเว็บเอง",
+    why: "หาโดเมนที่คลังยังว่าง แล้วออกไปค้นความรู้ใหม่มาเติมเอง (คุณกดปฏิเสธรายจุดได้เสมอ)",
+  },
+  {
+    key: "distill",
+    icon: "⚗",
+    name: "The Distiller ยุบรวมความรู้เอง",
+    why: "รวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวเมื่อคลังเริ่มซ้ำ — ย้อนกลับได้ทุกรอบ",
+  },
+  {
+    key: "evolve",
+    icon: "🔥",
+    name: "Self-Forge เขียนโค้ดตัวเองใหม่",
+    why: "ปล่อยให้มันแก้ซอร์สโค้ดของตัวเองตามเวลาโดยไม่ต้องถาม — เปลี่ยนโปรแกรมที่คุณกำลังใช้งานจริง",
+    danger: true,
+  },
+];
+let ignState = null;
+function renderIgnition(s) {
+  ignState = s;
+  const box = document.getElementById("ignition");
+  const btn = document.getElementById("ignBtn");
+  const title = document.getElementById("ignTitle");
+  const sub = document.getElementById("ignSub");
+  box.className = s.master ? "on" : "off";
+  btn.className = "ign-switch " + (s.master ? "stop" : "start");
+  btn.textContent = s.master ? "⏸ หยุดเครื่องยนต์" : "▶ เปิดเดินเครื่อง";
+  btn.disabled = false;
+  if (s.master) {
+    const armed = IGN_CAPS.filter(c => s.effective[c.key]);
+    title.innerHTML = `🟢 เครื่องยนต์เดินอยู่ — ตรวจทุก ${s.schedule.check_interval_min} นาที`;
+    const next = armed
+      .map(c => ({ c, h: s.due_in_h[c.key] }))
+      .filter(x => x.h !== null && x.h !== undefined)
+      .sort((a, b) => a.h - b.h)[0];
+    sub.innerHTML = armed.length
+      ? `ทำเองได้: ${armed.map(c => c.icon + " " + esc(c.name)).join(" · ")}` +
+        (next ? `<br>ถัดไป: <b>${esc(next.c.name)}</b> ${next.h <= 0 ? "ในรอบตรวจถัดไป" : `อีกราว ${next.h} ชม.`}` : "")
+      : "เปิดอยู่ แต่ยังไม่ได้อนุญาตให้ทำอะไรเลย — กด ⚙ เพื่อเลือก";
+  } else {
+    title.innerHTML = "⏸ เครื่องยนต์หยุดอยู่ — จะไม่มีอะไรทำงานเองเลย";
+    sub.innerHTML =
+      "ทุกปุ่มในหน้านี้ยังใช้ได้ตามปกติ (เชื่อมจุด · พิสูจน์ · สแกน inbox · ทำลายขอบเขต) — " +
+      "สิ่งที่ปิดอยู่คือ<b>นาฬิกา</b> ไม่ใช่ความสามารถ" +
+      (s.changed_at ? ` · เปลี่ยนล่าสุด ${new Date(s.changed_at).toLocaleString("th-TH")}` : "");
+  }
+  // The stop button only appears when there is something to stop — a kill switch that is
+  // always visible teaches you to ignore it.
+  const stop = document.getElementById("ignStopBtn");
+  const working = !!(s.busy || s.forging);
+  stop.style.display = working ? "" : "none";
+  if (working) {
+    stop.textContent = s.forging ? "🛑 หยุดรอบหลอมตัวเองที่กำลังทำอยู่" : "🛑 หยุดงานที่กำลังทำอยู่";
+    stop.disabled = false;
+  }
+  const zone = document.getElementById("ignSwitches");
+  zone.innerHTML = IGN_CAPS.map(c => {
+    const locked = s.locked[c.key];
+    const on = !!s[c.key];
+    const armed = !!s.effective[c.key];
+    const h = s.due_in_h[c.key];
+    const when = locked
+      ? "🔒 ปิดไว้ตั้งแต่ตอนติดตั้ง (ตัวแปรสภาพแวดล้อม) — เปิดจากหน้านี้ไม่ได้"
+      : !s.master
+        ? "รอเครื่องยนต์เดิน"
+        : armed
+          ? h === null || h === undefined
+            ? "พร้อมทำงาน"
+            : h <= 0 ? "ถึงกำหนดแล้ว — จะทำในรอบตรวจถัดไป" : `อีกราว ${h} ชม.`
+          : "ปิดอยู่";
+    return `<label class="ign-cap${armed ? " armed" : ""}${c.danger ? " danger" : ""}${locked ? " locked" : ""}">
+      <input type="checkbox" ${on ? "checked" : ""} ${locked ? "disabled" : ""}
+             onchange="setIgnCap('${c.key}', this.checked, this)">
+      <span>
+        <span class="cap-name">${c.icon} ${esc(c.name)}</span>
+        <span class="cap-why">${esc(c.why)}</span>
+        <span class="cap-when">${esc(when)}</span>
+      </span>
+    </label>`;
+  }).join("");
+}
+async function loadIgnition() {
+  try {
+    renderIgnition(await getJson("/api/autopilot"));
+  } catch (e) {
+    document.getElementById("ignTitle").textContent = "อ่านสถานะเครื่องยนต์ไม่สำเร็จ: " + e.message;
+  }
+}
+async function postIgnition(patch) {
+  const res = await fetch("/api/autopilot", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(patch),
+  });
+  const s = await res.json();
+  if (!res.ok) throw new Error(s.error || "เปลี่ยนสวิตช์ไม่สำเร็จ");
+  renderIgnition(s);
+  return s;
+}
+async function toggleIgnition(btn) {
+  const turningOn = !(ignState && ignState.master);
+  btn.disabled = true;
+  btn.textContent = "⏳ …";
+  try {
+    const s = await postIgnition({ master: turningOn });
+    if (turningOn && !IGN_CAPS.some(c => s.effective[c.key])) {
+      document.getElementById("ignSwitches").style.display = "grid";
+    }
+  } catch (e) {
+    alert("⚠ " + e.message);
+    loadIgnition();
+  }
+}
+async function setIgnCap(key, on, el) {
+  // Arming the forge is the one switch on this page that lets the program change itself
+  // while you are using it. It gets asked out loud, every time.
+  if (key === "evolve" && on) {
+    const ok = confirm(
+      "เปิด Self-Forge อัตโนมัติ?\n\n" +
+      "ระบบจะแก้ซอร์สโค้ดของตัวเองเองตามเวลา โดยไม่ต้องถามคุณอีก\n" +
+      "ทุกรอบต้องผ่านด่านของมันเองและย้อนกลับได้ แต่โปรแกรมที่คุณใช้งานอยู่จะเปลี่ยนจริง\n\n" +
+      "ถ้าไม่แน่ใจ ปล่อยไว้แบบปิด แล้วกด 🔥 ทำลายขอบเขต เองเมื่ออยากให้มันพัฒนา"
+    );
+    if (!ok) { el.checked = false; return; }
+  }
+  try {
+    await postIgnition({ [key]: on });
+  } catch (e) {
+    alert("⚠ " + e.message);
+    loadIgnition();
+  }
+}
+async function emergencyStop(btn) {
+  if (!confirm(
+    "หยุดทุกอย่างเดี๋ยวนี้?\n\n" +
+    "· ปิดสวิตช์ใหญ่ (ไม่มีอะไรทำงานตามเวลาอีก)\n" +
+    "· ฆ่างาน AI ที่กำลังทำอยู่ทั้งหมด\n" +
+    "· ถ้ากำลังหลอมตัวเองอยู่ รอบนั้นจะตกด่านและไฟล์ถูกย้อนกลับอัตโนมัติ"
+  )) return;
+  btn.disabled = true;
+  btn.textContent = "⏳ กำลังหยุด…";
+  try {
+    const res = await fetch("/api/autopilot/stop", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+    const r = await res.json();
+    renderIgnition(r.autopilot);
+    alert(`🛑 หยุดแล้ว — ปิดสวิตช์ใหญ่${r.killed ? ` และหยุดงาน AI ${r.killed} งาน` : " (ไม่มีงาน AI ค้างอยู่)"}` +
+      (r.was_forging ? "\n\nรอบหลอมตัวเองที่ค้างอยู่จะย้อนไฟล์กลับเอง — ดูบันทึกใต้ Layer 06" : ""));
+  } catch (e) {
+    alert("⚠ " + e.message);
+  } finally {
+    loadIgnition();
+  }
+}
+/* The one dependency the whole engine leans on. Reported where you look before you press
+ * anything, not in the stack trace of the round that needed it. */
+function renderCliHealth(h) {
+  const box = document.getElementById("ignCli");
+  if (!h || h.ok !== false) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.innerHTML =
+    `⚠ <b>เรียก claude CLI ไม่ได้</b> — ทุกชั้นที่ต้องใช้ AI (เชื่อมจุด · พิสูจน์ · Scout · Self-Forge) จะล้มเหลวจนกว่าจะแก้<br>` +
+    `<span style="color:var(--ink-faint)">${esc(h.error || "")}</span><br>` +
+    `ลองเปิดเทอร์มินัลแล้วรัน <code>claude --version</code> ในเครื่องเดียวกับที่รันเซิร์ฟเวอร์นี้`;
+}
+function toggleIgnDetail(btn) {
+  const z = document.getElementById("ignSwitches");
+  const open = z.style.display !== "none";
+  z.style.display = open ? "none" : "grid";
+  btn.textContent = open ? "⚙ ตั้งค่าว่าให้มันทำอะไรเองได้บ้าง" : "▲ ซ่อนสวิตช์";
+}
+
 /* ---------- Serendipity ---------- */
 async function loadForgotten() {
   const [forgotten, status] = await Promise.all([
     getJson("/api/forgotten"),
     getJson("/api/serendipity/status"),
   ]);
+  if (status.autopilot) renderIgnition(status.autopilot);
+  renderCliHealth(status.engine_cli);
   const st = document.getElementById("serStatus");
   const parts = [];
   if (status.inbox_pending) parts.push(`📥 มี ${status.inbox_pending} ไฟล์รอเก็บเกี่ยว`);
   parts.push(status.last_auto_run
     ? `เชื่อมอัตโนมัติล่าสุด: ${new Date(status.last_auto_run).toLocaleString("th-TH")}`
     : "ยังไม่เคยเชื่อมอัตโนมัติ");
-  parts.push(`ตรวจทุก ${status.check_interval_min} นาที`);
+  // Never claim a cadence the ignition has switched off — that sentence used to be printed
+  // whether or not anything was actually going to happen in those thirty minutes.
+  parts.push(status.autopilot && status.autopilot.master
+    ? `ตรวจทุก ${status.check_interval_min} นาที`
+    : "⏸ เครื่องยนต์หยุด — ต้องกดปุ่มเอง");
   st.textContent = parts.join(" · ");
   const row = document.getElementById("forgottenRow");
   row.innerHTML = forgotten.map(d => {
@@ -1175,8 +1445,11 @@ async function scanNow(btn) {
     const r = await res.json();
     let msg = `เก็บเกี่ยวได้ ${r.harvested} จุดใหม่`;
     if (r.connected) msg += ` · 💡 เชื่อมอัตโนมัติสำเร็จ: ${r.connection?.name}`;
+    else if (r.harvested) msg += ` · กด "⚡ เชื่อมจุด" เพื่อลากเส้นเชื่อม (เครื่องยนต์ไม่เชื่อมเองตอนหยุดอยู่)`;
+    if (r.skipped === "ignition_off") msg = "เครื่องยนต์หยุดอยู่ — กด ▶ เปิดเดินเครื่อง ก่อน";
     if (r.error) msg += ` · ⚠ ${r.error}`;
     alert(msg);
+    loadIgnition();
     loadDots();
     loadResults(r.connection?.id);
   } catch (e) {
@@ -1915,6 +2188,7 @@ async function consolidate(btn) {
 function limitRow(l, isNext) {
   const cls = ["limit-row"];
   if (l.status === "broken") cls.push("broken");
+  else if (l.status === "dormant") cls.push("dormant");
   else if (isNext) cls.push("next");
   if (l.exhausted) cls.push("spent");
   // The attempt ceiling is no longer the constant 3 — show what this wall has earned.
@@ -1936,32 +2210,102 @@ function limitRow(l, isNext) {
     <button class="btn small ghost" onclick="showWallKnowledge('${l.id}', this)" title="Layer 06.9: หลักการข้ามโดเมนจากคลังที่รอบหลอมตัวเองจะได้อ่านก่อนแตะโค้ด">🧠 ความรู้ที่จะใช้กับกำแพงนี้</button>
     <button class="btn small ghost" onclick="runWallInsight('${l.id}', this)" title="Layer 06.9: เอาเครื่องมือเชื่อมจุดมาเล็งกำแพงนี้ โดยตั้งโจทย์จากคำอธิบายกำแพง + เหตุผลที่มันยังอยู่">⚡ เชื่อมจุดเล็งกำแพงนี้</button>
     <button class="btn small ghost" onclick="transcend('${l.id}', this)">🔥 ทำลายขอบเขตนี้</button>`;
+  // Layer 10: the register's history belongs to every wall, including the ones already
+  // broken — "how did this get here" is exactly the question a broken wall raises, and
+  // a rolled-back round puts one back on the board.
+  const registerBtn = `<div class="limit-meta" style="margin-top:0.35rem">
+    <span class="spacer"></span>
+    <button class="btn small ghost" onclick="showRegisterHistory('${l.id}', this)" title="Layer 10: ทุกครั้งที่สถานะของกำแพงนี้เปลี่ยน — บัญชีสะสมที่เขียนทับไม่ได้">📜 ประวัติในทะเบียน</button>
+  </div>`;
   return `<div class="${cls.join(" ")}">
     <div class="limit-head">
       <h4>${l.status === "broken" ? "🔥 " : "🧱 "}${esc(l.title)}</h4>
       <span class="limit-cat">${esc(CAT_LABEL[l.category] || l.category)}</span>
       ${isNext ? '<span class="limit-cat" style="color:var(--amber-bright);border-color:var(--amber-bright)">เป้าหมายถัดไป</span>' : ""}
       ${l.status === "broken" ? `<span style="font-size:0.75rem;color:var(--ink-faint)">ทำลายแล้ว ${l.broken_at ? new Date(l.broken_at).toLocaleDateString("th-TH") : ""}</span>` : ""}
+      ${l.status === "dormant"
+        ? '<span class="limit-cat" style="color:var(--ink-faint)" title="Layer 10: เงียบติดกันหลายรอบจนเลิกถูกเสนอเป็นเป้าหมาย — ยังอยู่ในทะเบียนครบ ประวัติไม่หาย และเอ่ยถึงอีกครั้งเมื่อไหร่ก็กลับมา">😴 หลับอยู่</span>'
+        : ""}
+      ${l.status === "standing" && l.silent_rounds
+        ? `<span class="limit-cat" style="color:var(--ink-faint)" title="Layer 10: กระจกไม่ได้เอ่ยถึงกำแพงนี้มา ${l.silent_rounds} รอบ แต่มันไม่หายไปไหน (remanence)">🧲 ค้างอยู่ ${l.silent_rounds} รอบ</span>`
+        : ""}
+      ${(l.aliases || []).length
+        ? `<span class="limit-cat" style="color:var(--ink-faint)" title="Layer 10: กำแพงนี้เคยถูกคืนมาด้วย id อื่น (${(l.aliases || []).join(", ")}) และถูกจับคู่กลับด้วยลายเซ็นเชิงโครงสร้าง แผลเป็นจึงไม่ขาดจากตัวมัน">🧬 ${(l.aliases || []).length} ชื่อเดิม</span>`
+        : ""}
     </div>
     <p>${esc(l.description)}</p>
     ${l.evidence ? `<p style="font-size:0.78rem;color:var(--ink-faint)">📍 ${esc(l.evidence)}</p>` : ""}
     ${l.status !== "broken" && l.break_idea ? `<p class="break-idea">→ แผนทำลาย: ${esc(l.break_idea)}</p>` : ""}
     <div class="limit-meta">${meters}</div>
+    ${registerBtn}
     <div class="scar-zone" id="scars-${l.id}"></div>
   </div>`;
+}
+
+/* ---- Layer 10: the register's own history — the one account that cannot be overwritten ---- */
+const REG_EVENT = {
+  found: ["🆕", "ถูกพบครั้งแรก"],
+  confirmed: ["✔", "กระจกยืนยันว่ายังจริงอยู่"],
+  remanent: ["🧲", "ไม่ถูกเอ่ยถึงรอบนี้ — แต่ค้างอยู่"],
+  dormant: ["😴", "เงียบครบเกณฑ์ → หลับ (ไม่ถูกลบ)"],
+  revived: ["⏰", "ถูกเอ่ยถึงอีกครั้ง → ตื่นพร้อมประวัติเดิม"],
+  broken: ["🔥", "ถูกทำลาย"],
+  unbroken: ["↩", "รอบถูกย้อนกลับ → กำแพงยืนอีกครั้ง"],
+  migrated: ["📦", "ทะเบียนถูกยกระดับเป็นบัญชีสะสม"],
+};
+async function showRegisterHistory(limitId, btn) {
+  const box = document.getElementById("scars-" + limitId);
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+  if (box.classList.contains("on") && box.dataset.view === "register") {
+    box.classList.remove("on");
+    box.innerHTML = "";
+    btn.textContent = btn.dataset.label;
+    return;
+  }
+  btn.textContent = "⏳ …";
+  try {
+    const r = await getJson("/api/limits/events?limitId=" + encodeURIComponent(limitId));
+    box.dataset.view = "register";
+    box.classList.add("on");
+    const rows = (r.events || []).slice().reverse();
+    box.innerHTML =
+      `<div style="font-size:0.8rem;color:var(--ink-faint);margin-bottom:0.5rem">` +
+      `บัญชีสะสมที่เขียนทับไม่ได้ · เงียบได้ ${r.coercive_rounds} รอบก่อนหลับ · จับคู่ชื่อใหม่ที่ความคล้าย ≥ ${r.epitope_match}` +
+      `${(r.limit && (r.limit.aliases || []).length) ? ` · ชื่อเดิม: ${r.limit.aliases.map(esc).join(", ")}` : ""}</div>` +
+      (rows.length
+        ? rows.map(e => {
+            const m = REG_EVENT[e.type] || ["·", e.type];
+            return `<div style="font-size:0.82rem;padding:0.3rem 0;border-bottom:1px solid var(--line)">
+              <span style="color:var(--ink-faint)">${new Date(e.at).toLocaleString("th-TH")}</span>
+              &nbsp;${m[0]} <b>${esc(m[1])}</b>
+              ${e.matched_by === "epitope" ? `<span style="color:var(--dot-b)"> · จับคู่ด้วยลายเซ็นเชิงโครงสร้าง (${e.similarity})</span>` : ""}
+              ${e.silent_rounds ? `<span style="color:var(--ink-faint)"> · เงียบมาแล้ว ${e.silent_rounds} รอบ</span>` : ""}
+              ${e.evo_id ? `<span style="color:var(--ink-faint)"> · ${esc(e.evo_id)}</span>` : ""}
+              ${e.note ? `<div style="color:var(--ink-faint);margin-top:0.15rem">${esc(e.note)}</div>` : ""}
+            </div>`;
+          }).join("")
+        : `<p style="font-size:0.82rem;color:var(--ink-faint)">ยังไม่มีเหตุการณ์ — กำแพงนี้ยังไม่เคยผ่านรอบส่องกระจกหลังชั้น 10 เริ่มใช้</p>`);
+    btn.textContent = "▲ ซ่อนประวัติ";
+  } catch (e) {
+    btn.textContent = btn.dataset.label;
+    alert("⚠ " + e.message);
+  }
 }
 
 /* ---- Layer 06.5: scar tissue — what the next round will be told about this wall ---- */
 async function showScars(limitId, btn) {
   const box = document.getElementById("scars-" + limitId);
   if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-  if (box.classList.contains("on")) {
+  // Two panels share one drawer (scars and the Layer 10 register history) — a second click
+  // on the *other* button must switch views, not silently close the drawer.
+  if (box.classList.contains("on") && box.dataset.view === "scars") {
     box.classList.remove("on");
     box.innerHTML = "";
     btn.textContent = btn.dataset.label;
     return;
   }
   btn.disabled = true;
+  box.dataset.view = "scars";
   box.classList.add("on");
   box.innerHTML = '<div class="scar-loading">กำลังอ่านแผลเป็นของกำแพงนี้…</div>';
   try {
@@ -2263,6 +2607,10 @@ async function restartEngine(btn) {
   }, 1000);
 }
 
+loadIgnition();
+// Keep the ignition honest: the page must not still say "idle" while a round it did not
+// start is running, or "running" for twenty minutes after one finished.
+setInterval(loadIgnition, 20000);
 loadDots();
 loadResults();
 loadLessons();

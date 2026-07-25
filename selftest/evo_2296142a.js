@@ -18,7 +18,8 @@
  * ถ้าข้อใดตกกับโค้ดเดิม แปลว่ารอบนี้เปลี่ยนพฤติกรรม ไม่ใช่ยุบรวม และต้องถูกย้อนกลับ
  *
  * ทดสอบเฉพาะพฤติกรรมภายนอกที่ห้ามขยับ:
- *   1. รายการ endpoint ที่ประกาศไว้ต้องครบ 15 เส้นเท่าเดิม และทุกเส้นยังตอบ 200
+ *   1. เส้นทางทั้ง 15 เส้นที่ประกาศไว้ ณ รอบนี้ต้องไม่หายไปเลย และทุกเส้นยังตอบ 200
+ *      (เดิมเขียนเป็น "เท่ากันเป๊ะ" — ดูหมายเหตุตรงข้อนั้น ทะเบียนโตได้ตามการออกแบบ)
  *   2. ฟังก์ชันความเหมาะสมกลับด้าน (POST /api/consolidation/dryrun) ตัดสินเหมือนเดิมทุกกรณี
  *      รวมกรณีสำคัญที่สุด: ลายเซ็นของรอบขยาย (ตกกับเก่า/ผ่านกับใหม่) ต้องถูกรอบยุบรวมปฏิเสธ
  *   3. ราวกันตกของการถอดเส้นทาง: เส้นที่มีคนเรียกถอดไม่ได้ · เส้นที่ไม่มีอยู่จริงถอดไม่ได้
@@ -127,12 +128,17 @@ const SAME = suite([
     led.status === 200 && Array.isArray(L.endpoints) && Number.isFinite(L.declared),
     `ได้ ${led.status} · ประกาศไว้ ${L.declared} เส้น`
   );
+  /* แก้ 25/7/2026 — ข้อนี้เคยเขียนว่า "ต้องเท่ากันเป๊ะ" ทั้งจำนวนและสมาชิก ซึ่งจริงเฉพาะวันที่เขียน:
+   * ทุกรอบขยายที่ผ่านหลังจากนั้น *ต้อง* เพิ่มเส้นทางเข้ามาตามการออกแบบของ Layer 6.6 เอง
+   * ข้อนี้จึงตกเงียบ ๆ มาตั้งแต่รอบ /api/forge/loop และผู้ตรวจอิสระก็แดงค้างโดยไม่มีใครรัน
+   * (เจอตอนเพิ่ม /api/autopilot ใน Layer 9 — โค้ดที่ commit ไว้ก่อนหน้านั้นก็ตกข้อนี้เหมือนกัน)
+   * เจตนาเดิมคือ "ห้ามมีเส้นไหนหายไป" ไม่ใช่ "ห้ามมีเส้นใหม่" — ข้อนี้จึงตรวจแบบเซตย่อย
+   * ส่วนการโตยังถูกคุมด้วยด่าน shrink/consolidation ที่อื่นอยู่แล้ว */
+  const vanished = DECLARED.filter((ep) => !declared.includes(ep));
   check(
-    `รายการเส้นทางที่ประกาศไว้ยังเป็นชุดเดิมครบ ${DECLARED.length} เส้น (ไม่มีเส้นไหนหายไปหรือโผล่มา)`,
-    L.declared === DECLARED.length &&
-      declared.length === DECLARED.length &&
-      DECLARED.every((ep) => declared.includes(ep)),
-    declared.filter((ep) => !DECLARED.includes(ep)).join(", ") || "ตรงกันทุกเส้น"
+    `เส้นทางที่ประกาศไว้ตั้งแต่รอบนี้ต้องไม่หายไปแม้แต่เส้นเดียว (${DECLARED.length} เส้น)`,
+    L.declared >= DECLARED.length && declared.length >= DECLARED.length && vanished.length === 0,
+    vanished.length ? "หายไป: " + vanished.join(", ") : `ครบทุกเส้น · ตอนนี้ประกาศไว้ ${L.declared} เส้น`
   );
   for (const ep of DECLARED) {
     const r = await get(ep);
@@ -264,7 +270,8 @@ const SAME = suite([
       self.metrics &&
       ["code_files", "code_lines", "code_chars", "prompt_chars", "endpoints"].every((k) => Number.isFinite(self.metrics[k])) &&
       self.endpoints &&
-      self.endpoints.declared === DECLARED.length &&
+      // เหตุผลเดียวกับข้อ 1: ทะเบียนโตได้ตามการออกแบบ ห้ามเฉพาะการหดหายเงียบ ๆ
+      self.endpoints.declared >= DECLARED.length &&
       Number.isFinite(self.rounds_since_consolidation),
     `ไฟล์ ${(self.files || []).length} · declared ${self.endpoints && self.endpoints.declared}`
   );

@@ -109,12 +109,47 @@ const REGRESSION_ENDPOINTS = [
   "/api/adoption",
   // Layer 6.9: the knowledge a forge round actually gets to read before it touches code.
   "/api/forge/knowledge",
+  // Layer 9: the owner's ignition. This one is not merely a route that must keep answering —
+  // it is the route by which a human stops the engine, so a round that breaks it is void
+  // even if everything else it did was brilliant.
+  "/api/autopilot",
+  // Layer 10: how the register of walls got to be the way it is. The engine's memory of its
+  // own failures is addressed through here.
+  "/api/limits/events",
 ];
 // Layer 6.6: both ledgers live outside data/ on purpose. data/*.json is compared
 // byte-for-byte after every forge round, so an ordinary HTTP request arriving while the
 // forge is running would otherwise look like the forge tampering with its own memory.
 const USAGE_FILE = path.join(EVO_DIR, "endpoint-usage.json");
 const DEPRECATED_FILE = path.join(EVO_DIR, "deprecations.json");
+/* ================= Layer 09: THE IGNITION — the key switch =================
+ * Every autonomous behaviour above (auto-connect, the Scout, the Distiller and above all
+ * the Self-Forge rewriting this file) used to start on a timer the moment the process
+ * booted. That is the right default for a demo and the wrong default for a tool somebody
+ * depends on: the owner learns what their engine did by reading the log afterwards.
+ * From here the daemon is a machine with an ignition. Nothing scheduled runs until the
+ * switch is turned on in the UI, the setting survives restarts, and the most expensive and
+ * least reversible capability — the engine editing its own source — stays off even then
+ * until it is armed on purpose.
+ *
+ * Every manual button keeps working with the switch off. The switch governs the *clock*,
+ * never the owner's hands.
+ *
+ * The file lives outside data/ for the same reason the usage ledger does: data/*.json is
+ * compared byte-for-byte around a forge round, and a human flipping a switch mid-round
+ * must not read as the forge tampering with its own memory. It is also the one setting the
+ * forge must never be able to turn back on for itself — see AUTOPILOT_FILE in walkSelf's
+ * skip set and the guard in restoreGuarded().
+ */
+const AUTOPILOT_FILE = path.join(EVO_DIR, "autopilot.json");
+// Sub-switches, in the order they are shown. `master` gates all of them at once.
+const AUTOPILOT_KEYS = ["connect", "scout", "distill", "evolve"];
+// What the switches mean once the master switch is on. `evolve` is deliberately not in
+// this set: arming the engine to rewrite itself unattended is always an explicit act.
+const AUTOPILOT_DEFAULT = { master: false, connect: true, scout: true, distill: true, evolve: false };
+// Boot with the master switch already on — for a headless/service install where there is
+// no browser to press the button in. Absent or "0", the engine boots idle.
+const AUTOPILOT_BOOT = process.env.AUTOPILOT === "1";
 // How many accepted expansion rounds may pile up before the engine owes itself a
 // consolidation round (0 = never schedule one automatically; the button still works).
 const CONSOLIDATE_EVERY = Number(process.env.CONSOLIDATE_EVERY || 3);
@@ -222,6 +257,106 @@ function slog(state, msg) {
   console.log("  [serendipity]", msg);
 }
 
+/* ---- Layer 9: the ignition switch (see AUTOPILOT_FILE) ---- */
+function loadAutopilot() {
+  const raw = loadJson(AUTOPILOT_FILE, {});
+  const ap = { ...AUTOPILOT_DEFAULT };
+  for (const k of ["master", ...AUTOPILOT_KEYS]) {
+    if (typeof raw[k] === "boolean") ap[k] = raw[k];
+  }
+  ap.changed_at = raw.changed_at || null;
+  return ap;
+}
+function saveAutopilot(next) {
+  const ap = { ...loadAutopilot(), ...next, changed_at: new Date().toISOString() };
+  const out = { master: !!ap.master, changed_at: ap.changed_at };
+  for (const k of AUTOPILOT_KEYS) out[k] = !!ap[k];
+  saveJson(AUTOPILOT_FILE, out);
+  return out;
+}
+function ensureAutopilotFile() {
+  // Always on disk, so readGuarded() can hold it byte-for-byte across a forge round: a file
+  // that does not exist yet cannot be restored if the round invents it.
+  //
+  // AUTOPILOT=1 applies here and only here — at first install, when there is no file and
+  // therefore no decision by the owner to overrule. After that the file is the truth, so a
+  // service restart can never undo someone pressing stop.
+  if (!fs.existsSync(AUTOPILOT_FILE)) saveAutopilot({ master: AUTOPILOT_BOOT });
+}
+/* What the *clock* is allowed to do right now. Env stays a hard ceiling above the switch:
+ * EVOLVE_HOURS=0 means the schedule is off no matter what the page says, so an operator
+ * who disabled a capability at install time cannot have it re-enabled from the browser. */
+function autopilot() {
+  const ap = loadAutopilot();
+  const on = (k, ceiling = true) => ap.master === true && ap[k] === true && ceiling;
+  return {
+    ...ap,
+    can_connect: on("connect"),
+    can_scout: on("scout", SCOUT_HOURS > 0),
+    can_distill: on("distill", DISTILL_HOURS > 0),
+    can_evolve: on("evolve", EVOLVE_HOURS > 0),
+  };
+}
+const AUTOPILOT_LABELS = {
+  master: "เดินเครื่องอัตโนมัติ",
+  connect: "เชื่อมจุดเอง",
+  scout: "The Scout ออกไปค้นเว็บเอง",
+  distill: "The Distiller ยุบรวมความรู้เอง",
+  evolve: "Self-Forge เขียนโค้ดตัวเองใหม่",
+};
+/* One place that answers "what will this machine do if I walk away", so the page never has
+ * to infer it from four separate numbers. `due_in_h` is null when the clock for that
+ * capability is off — the difference between "not yet" and "never" is the whole point. */
+function autopilotStatus() {
+  const ap = autopilot();
+  const state = loadState();
+  const since = (iso) => (iso ? (Date.now() - new Date(iso).getTime()) / 3600000 : Infinity);
+  const due = (can, every, last) => {
+    if (!can || !(every > 0)) return null;
+    return Math.max(0, Math.round((every - since(last)) * 10) / 10);
+  };
+  return {
+    master: ap.master,
+    connect: ap.connect,
+    scout: ap.scout,
+    distill: ap.distill,
+    evolve: ap.evolve,
+    changed_at: ap.changed_at,
+    labels: AUTOPILOT_LABELS,
+    // What the switches add up to once the env ceilings are applied.
+    effective: {
+      connect: ap.can_connect,
+      scout: ap.can_scout,
+      distill: ap.can_distill,
+      evolve: ap.can_evolve,
+    },
+    // A switch the page must draw as unavailable rather than merely off: the operator
+    // disabled this capability at install time and the browser cannot undo that.
+    locked: {
+      connect: false,
+      scout: !(SCOUT_HOURS > 0),
+      distill: !(DISTILL_HOURS > 0),
+      evolve: !(EVOLVE_HOURS > 0),
+    },
+    schedule: {
+      check_interval_min: CHECK_MIN,
+      connect_hours: AUTO_HOURS,
+      scout_hours: SCOUT_HOURS,
+      distill_hours: DISTILL_HOURS,
+      evolve_hours: EVOLVE_HOURS,
+    },
+    due_in_h: {
+      connect: ap.can_connect ? Math.max(0, Math.round((AUTO_HOURS - since(state.last_auto_run)) * 10) / 10) : null,
+      scout: due(ap.can_scout, SCOUT_HOURS, scoutState(state).last_web_scout),
+      distill: due(ap.can_distill, DISTILL_HOURS, state.last_distill),
+      evolve: due(ap.can_evolve, EVOLVE_HOURS, state.last_evolution),
+    },
+    boot_env: AUTOPILOT_BOOT,
+    busy,
+    forging,
+  };
+}
+
 /* ================= Windows toast notifications ================= */
 function toast(title, body) {
   try {
@@ -257,11 +392,16 @@ function toast(title, body) {
 // A timeout is never retried: it already spent the whole budget once.
 async function runClaudeRaw(prompt, opts = {}) {
   let last;
+  // Layer 9: which "stop everything" era this call belongs to. If the counter moves while
+  // the call is in flight, someone hit the stop button — a retry then means the engine
+  // ignoring an instruction, which is the one failure mode a kill switch cannot have.
+  const era = abortEpoch;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       return await runClaudeOnce(prompt, opts);
     } catch (e) {
       last = e;
+      if (abortEpoch !== era) throw new Error("ถูกสั่งหยุดกลางคัน");
       const msg = String((e && e.message) || e);
       const transient = /EOF|EPIPE|ECONNRESET|ปิดก่อนอ่านข้อมูล|exited \d+/.test(msg) && !/timed out/.test(msg);
       if (!transient || attempt === 3) throw e;
@@ -270,6 +410,76 @@ async function runClaudeRaw(prompt, opts = {}) {
     }
   }
   throw last;
+}
+
+/* Layer 9: every claude process this engine has alive right now.
+ * A forge round is 45 minutes of someone else's electricity and it used to be
+ * uninterruptible — the only stop button was killing the server, which leaves a
+ * half-written source tree behind. Holding the handles makes "stop" a real answer:
+ * killing the child fails the round, and a failed round is the path the engine already
+ * knows how to walk back. */
+const liveClaude = new Set();
+let abortEpoch = 0;
+function killAllClaude(reason = "หยุดโดยผู้ใช้") {
+  abortEpoch++;
+  let killed = 0;
+  for (const child of [...liveClaude]) {
+    try {
+      // shell:true means the direct child is cmd.exe — killing it alone orphans the CLI
+      // underneath, which would keep burning tokens with nobody listening.
+      if (process.platform === "win32" && child.pid) {
+        spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
+      } else {
+        child.kill("SIGTERM");
+      }
+      child.__abortReason = reason;
+      killed++;
+    } catch {}
+    liveClaude.delete(child);
+  }
+  return killed;
+}
+
+/* Every thinking layer in this file shells out to the same binary, and until now the first
+ * thing to tell you it was missing was a four-minute round dying with "claude exited 1".
+ * The engine asks once at boot and says so where a person will see it. */
+let cliHealth = { ok: null, version: null, error: null, at: null };
+function checkClaudeCli() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok, version, error) => {
+      if (done) return;
+      done = true;
+      cliHealth = { ok, version, error, at: new Date().toISOString() };
+      resolve(cliHealth);
+    };
+    let child;
+    try {
+      child = spawn("claude", ["--version"], { shell: true, windowsHide: true });
+    } catch (e) {
+      return finish(false, null, e.message);
+    }
+    const timer = setTimeout(() => {
+      try {
+        child.kill();
+      } catch {}
+      finish(false, null, "ไม่ตอบใน 20 วินาที");
+    }, 20000);
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("error", (e) => {
+      clearTimeout(timer);
+      finish(false, null, e.message);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      const v = out.trim().split("\n")[0] || "";
+      if (code === 0 && v) return finish(true, v, null);
+      finish(false, null, (err || out).trim().slice(0, 200) || `claude --version exited ${code}`);
+    });
+  });
 }
 
 function runClaudeOnce(
@@ -298,7 +508,9 @@ function runClaudeOnce(
     const child = viaFile
       ? spawn(cmdline, { shell: true, windowsHide: true, cwd })
       : spawn("claude", args, { shell: true, windowsHide: true, cwd });
+    liveClaude.add(child);
     const cleanup = () => {
+      liveClaude.delete(child);
       if (promptFile) {
         try {
           fs.unlinkSync(promptFile);
@@ -325,6 +537,11 @@ function runClaudeOnce(
       clearTimeout(timer);
       cleanup();
       out = out.replace(/^﻿/, "").trim();
+      // A round the owner stopped is not a round that failed on its merits: say so plainly,
+      // and never let the retry loop above resurrect it (the message carries no EOF/EPIPE).
+      if (child.__abortReason) {
+        return reject(new Error("ถูกสั่งหยุดกลางคัน: " + child.__abortReason));
+      }
       if (code !== 0 && !out) {
         return reject(new Error(`claude exited ${code}: ${err.slice(0, 500)}`));
       }
@@ -344,6 +561,11 @@ function runClaudeOnce(
     child.stdin.on("error", (e) => {
       clearTimeout(timer);
       cleanup();
+      // Being stopped on purpose also breaks this pipe. Reporting that as a flaky start
+      // would send the retry loop off to redo the very work someone just cancelled.
+      if (child.__abortReason) {
+        return reject(new Error("ถูกสั่งหยุดกลางคัน: " + child.__abortReason));
+      }
       reject(new Error("ส่งพรอมป์ตให้ claude CLI ไม่สำเร็จ (" + e.code + ") — โปรเซสปิดก่อนอ่านข้อมูล"));
     });
     try {
@@ -1718,6 +1940,11 @@ function readGuarded() {
       if (f.endsWith(".js")) g["verifier/" + f] = fs.readFileSync(path.join(VERIFIER_DIR, f), "utf8");
     }
   } catch {}
+  // Layer 9: and so is the ignition. The forge may rewrite every line that decides *how* it
+  // evolves; the switch deciding *whether* it may start itself belongs to the owner alone.
+  try {
+    if (fs.existsSync(AUTOPILOT_FILE)) g["evolution/autopilot.json"] = fs.readFileSync(AUTOPILOT_FILE, "utf8");
+  } catch {}
   return g;
 }
 
@@ -2897,9 +3124,19 @@ function approachOf(entry) {
 function sameApproach(a, b) {
   return a.files === b.files && jaccard(a.grams, b.grams) >= APPROACH_SAME_AT;
 }
-function failedRounds(limitId, ledger) {
+/* Layer 10: a wall's scars are addressed by id, and ids used to be reissued on every look in
+ * the mirror. `aliases` is the list of ids this wall has worn before, so a round that failed
+ * under an old name is still this wall's failure. Passing the wall (not just its id) is what
+ * makes the history survive being renamed. */
+function limitIdSet(limit) {
+  if (!limit) return [];
+  const ids = [typeof limit === "string" ? limit : limit.id, ...(Array.isArray(limit.aliases) ? limit.aliases : [])];
+  return ids.filter(Boolean);
+}
+function failedRounds(limit, ledger) {
+  const ids = new Set(limitIdSet(limit));
   return (ledger || [])
-    .filter((e) => e && e.limit && e.limit.id === limitId && e.verdict !== "accepted")
+    .filter((e) => e && e.limit && ids.has(e.limit.id) && e.verdict !== "accepted")
     .slice()
     .sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
 }
@@ -2915,7 +3152,8 @@ function distinctApproaches(entries) {
 // The movable ceiling. Three tries is where a wall starts, not where it dies:
 // each genuinely different failed approach buys one more, capped at FORGE_MAX_ATTEMPTS.
 function attemptBudget(limit, ledger) {
-  const failures = failedRounds(limit.id, ledger);
+  // Layer 10: the whole wall, not its current id — see limitIdSet()
+  const failures = failedRounds(limit, ledger);
   const distinct = distinctApproaches(failures);
   const attempts = Math.max(Number(limit.attempts) || 0, failures.length);
   const earned = Math.max(0, Math.min(FORGE_MAX_ATTEMPTS - FORGE_BASE_ATTEMPTS, distinct - 1));
@@ -2985,8 +3223,8 @@ function writeAttempted(evoId, after, changes) {
   return `evolution/backups/${evoId}/attempted`;
 }
 
-function failureDossier(limitId, ledger) {
-  return failedRounds(limitId, ledger).map((e, i) => {
+function failureDossier(limit, ledger) {
+  return failedRounds(limit, ledger).map((e, i) => {
     const r = e.report || {};
     return {
       round: i + 1,
@@ -3053,7 +3291,7 @@ ${rounds}
 
 function forgeHistory(limit, ledger) {
   const budget = attemptBudget(limit, ledger);
-  const dossier = failureDossier(limit.id, ledger);
+  const dossier = failureDossier(limit, ledger);
   return { budget, dossier, block: buildFailureBlock(dossier, budget) };
 }
 
@@ -3067,7 +3305,8 @@ function forgeHistory(limit, ledger) {
 function targetRanking(limits, ledger, { adoption = null, usage = null, now = Date.now() } = {}) {
   const cats = adoption || categoryAdoption(ledger, usage || loadUsage(), now);
   return (limits || [])
-    .filter((l) => l.status !== "broken" && !attemptBudget(l, ledger).exhausted)
+    // Layer 10: dormant walls stay in the register but stop competing for rounds
+    .filter((l) => isTargetable(l) && !attemptBudget(l, ledger).exhausted)
     .map((l) => {
       const base = round2(l.unlock_score - l.risk / 2);
       const s = cats[l.category];
@@ -3699,8 +3938,11 @@ ${
 }
 
 function buildIntrospectPrompt(body, dots, connections, limits) {
-  const standing = limits.filter((l) => l.status !== "broken");
+  const standing = limits.filter(isTargetable);
   const broken = limits.filter((l) => l.status === "broken");
+  // Layer 10: walls the mirror stopped mentioning are shown separately, so the model can
+  // bring one back deliberately instead of rediscovering it under a new name.
+  const dormant = limits.filter((l) => l.status === "dormant");
   return `คุณคือ "The Self-Forge" — ชั้นที่ 6 ของ The Dot-Connector AI และคุณกำลังส่องกระจกดูตัวเอง
 ซอร์สโค้ดข้างล่างนี้ *คือตัวคุณเอง* ระบบนี้รันอยู่จริงบนเครื่องผู้ใช้ตอนนี้
 
@@ -3723,8 +3965,19 @@ ${introspectKnowledgeBlock(dots, connections)}
 ${broken.map((l) => `- ${l.title}`).join("\n") || "(ยังไม่มี)"}
 
 ===== ขอบเขตที่บันทึกไว้แล้วและยังไม่ถูกทำลาย =====
-${standing.map((l) => `- [${l.id}] ${l.title}`).join("\n") || "(ยังไม่มี)"}
-(ถ้าข้อไหนยังจริงอยู่ ให้คงไว้โดยใส่ id เดิมกลับมา · ถ้าข้อไหนไม่จริงแล้วเพราะโค้ดเปลี่ยนไป ให้ทิ้งไป)
+${standing.map((l) => `- [${l.id}] ${l.title}${l.silent_rounds ? ` (ไม่ถูกเอ่ยถึงมาแล้ว ${l.silent_rounds} รอบ)` : ""}`).join("\n") || "(ยังไม่มี)"}
+(ถ้าข้อไหนยังจริงอยู่ ให้คงไว้โดยใส่ id เดิมกลับมา)
+
+⚠ สำคัญ (Layer 10 · RemLedger): ทะเบียนนี้เป็น "บัญชีสะสม" ไม่ใช่ภาพถ่าย — **การไม่เอ่ยถึงข้อใด ไม่ได้แปลว่าลบข้อนั้น**
+ข้อที่คุณไม่พูดถึงจะยังอยู่ในสถานะ remanent (ยังจริง ยังถือประวัติความล้มเหลวของมันไว้) และจะเลิกถูกเสนอเป็นเป้าหมาย
+ก็ต่อเมื่อเงียบติดกัน ${LIMIT_COERCIVE_ROUNDS} รอบ ดังนั้น**ถ้าข้อไหนไม่จริงแล้วจริง ๆ ให้พูดออกมาตรง ๆ ใน self_assessment ว่าข้อไหนและเพราะอะไร**
+อย่าใช้วิธี "เงียบใส่" — และถ้าคุณคืน id ใหม่ให้กำแพงที่มีอยู่แล้ว ระบบจะจับคู่จากลายเซ็นเชิงโครงสร้าง (epitope) ให้เอง
+เพื่อไม่ให้แผลเป็นของมันขาดจากตัวมัน
+
+${dormant.length ? `===== ขอบเขตที่หลับอยู่ (เงียบเกิน ${LIMIT_COERCIVE_ROUNDS} รอบ — ยังอยู่ในทะเบียน ยังไม่ถูกทำลาย) =====
+${dormant.map((l) => `- [${l.id}] ${l.title}`).join("\n")}
+(ถ้าข้อไหนยังจริงอยู่ ให้เอ่ยถึงพร้อม id เดิม มันจะกลับมาพร้อมประวัติทั้งหมด)
+` : ""}
 
 ตอบเป็น JSON ล้วนเท่านั้น (ห้ามมี markdown หรือข้อความอื่นนอก JSON) ข้อความทุก field เป็นภาษาไทย
 ให้มี 5-8 ข้อ เรียงจาก unlock_score มากไปน้อย:
@@ -3900,6 +4153,203 @@ ${forgeBundle(promptBundle(body))}
 }
 
 /* ---- Layer 6 operations ---- */
+/* ================= Layer 10: THE REMLEDGER — ทะเบียนกำแพงแบบแม่เหล็กค้าง =================
+ * This layer was designed by the engine itself: POST /api/forge/insight laid its own wall
+ * "the register is overwritten every time it looks in the mirror" over two dots from the
+ * repository — hysteresis in physics (dot_2c82d4bf) and immune memory (dot_21a771d4) — and
+ * the shared structure it found is the whole design:
+ *
+ *   · hysteresis     asserting a wall exists is cheap; declaring it gone must cost a
+ *                    coercive field. In between, the state simply *stays* (remanence),
+ *                    with nobody having to mention it this round.
+ *   · immune memory  a memory cell remembers the antigen, not the case number. A scar must
+ *                    bind to the wall's structural signature — its epitope — never to an id
+ *                    the model reissues at random each time it looks.
+ *
+ * What it replaces: introspect() wrote the whole of limits.json every round and kept only
+ * (a) broken walls and (b) walls whose id the model happened to echo back. A wall that was
+ * still true but went unmentioned vanished — with its attempt count, and with the link from
+ * evolution.json's failed rounds to the thing they failed at. Three of the four inputs to
+ * attemptBudget()/failureDossier() were addressed by an id the register kept reissuing, so
+ * the engine could try the same wall five times and believe every time was the first.
+ *
+ * Nothing is deleted here, ever. Walls move between states and every move is appended to
+ * evolution/limits-events.jsonl, which is the audit trail limits.json cannot be.
+ */
+const LIMIT_EVENTS_FILE = path.join(EVO_DIR, "limits-events.jsonl");
+// Consecutive introspections a standing wall may go unmentioned before the register stops
+// offering it as a target. Not deletion — dormancy, and one mention brings it back.
+const LIMIT_COERCIVE_ROUNDS = Math.max(1, Number(process.env.LIMIT_COERCIVE_ROUNDS || 3));
+// Jaccard overlap over 4-gram shingles above which two descriptions are the same wall
+// wearing two names. Deliberately not too eager: merging two real walls hides one of them.
+const LIMIT_EPITOPE_MATCH = Math.min(0.95, Math.max(0.2, Number(process.env.LIMIT_EPITOPE_MATCH || 0.42)));
+
+/* The structural signature of a wall: what it is about, not what it was called this time.
+ * Two parts, because they fail in different ways —
+ *   shingles: 4-grams of the normalised prose, which survives rewording
+ *   symbols:  the code identifiers the wall names (functions, files, endpoints), which
+ *             survive a complete rewrite of the prose but not a genuine change of subject */
+function epitopeOf(limit) {
+  const text = [limit.title, limit.description, limit.evidence].filter(Boolean).join(" ");
+  const norm = String(text)
+    .toLowerCase()
+    .replace(/[\s​]+/g, " ")
+    .replace(/[«»"'`(),.;:!?\[\]{}]/g, "")
+    .trim();
+  const shingles = new Set();
+  for (let i = 0; i + 4 <= norm.length; i++) shingles.add(norm.slice(i, i + 4));
+  const symbols = new Set(
+    (String(text).match(/[A-Za-z_][A-Za-z0-9_]{3,}(?:\(\)|\.js|\.json)?|\/api\/[a-z/]+/g) || [])
+      .map((s) => s.toLowerCase().replace(/\(\)$/, ""))
+  );
+  return { shingles, symbols };
+}
+function jaccard(a, b) {
+  if (!a.size || !b.size) return 0;
+  let hit = 0;
+  for (const x of a) if (b.has(x)) hit++;
+  return hit / (a.size + b.size - hit);
+}
+/* How strongly two walls are the same wall. Symbol overlap is worth more than prose overlap:
+ * two walls can describe the same code in different words, but two walls that name the same
+ * three functions and the same failure shape are not two walls. */
+function epitopeSimilarity(a, b) {
+  const prose = jaccard(a.shingles, b.shingles);
+  const code = jaccard(a.symbols, b.symbols);
+  return Math.max(prose, code ? prose * 0.5 + code * 0.5 : 0);
+}
+function appendLimitEvent(event) {
+  try {
+    fs.mkdirSync(path.dirname(LIMIT_EVENTS_FILE), { recursive: true });
+    fs.appendFileSync(LIMIT_EVENTS_FILE, JSON.stringify({ at: new Date().toISOString(), ...event }) + "\n", "utf8");
+  } catch {}
+}
+function readLimitEvents(limit = null) {
+  let lines = [];
+  try {
+    lines = fs.readFileSync(LIMIT_EVENTS_FILE, "utf8").split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+  const ids = limit ? new Set(limitIdSet(limit)) : null;
+  const out = [];
+  for (const line of lines) {
+    try {
+      const e = JSON.parse(line);
+      if (!ids || ids.has(e.limit_id)) out.push(e);
+    } catch {}
+  }
+  return out;
+}
+// A wall the register is currently willing to spend a round on.
+function isTargetable(l) {
+  return l.status !== "broken" && l.status !== "dormant";
+}
+
+/* The merge that used to be an overwrite. Pure — no AI, no disk — so the proof file can
+ * drive it through POST /api/limits/merge/dryrun with invented input and check every
+ * transition without spending a forge round. */
+function mergeLimits(current, incoming, opts = {}) {
+  const now = opts.now || new Date().toISOString();
+  const events = [];
+  const kept = current.map((l) => ({ ...l, aliases: Array.isArray(l.aliases) ? [...l.aliases] : [] }));
+  const epitopes = kept.map((l) => ({ limit: l, ep: epitopeOf(l) }));
+  const touched = new Set();
+
+  for (const raw of incoming) {
+    if (!raw || !raw.title) continue;
+    const candidate = {
+      title: String(raw.title).slice(0, 200),
+      category: String(raw.category || "capability").slice(0, 40),
+      description: String(raw.description || "").slice(0, 1200),
+      evidence: String(raw.evidence || "").slice(0, 600),
+      why_it_stands: String(raw.why_it_stands || "").slice(0, 600),
+      break_idea: String(raw.break_idea || "").slice(0, 1200),
+      unlock_score: Number(raw.unlock_score) || 5,
+      risk: Number(raw.risk) || 5,
+    };
+    // 1. The id, if the model happened to echo one back that we know.
+    let match = raw.id ? kept.find((l) => limitIdSet(l).includes(raw.id)) : null;
+    let how = match ? "id" : null;
+    let score = match ? 1 : 0;
+    // 2. Otherwise the epitope: same wall, new name.
+    if (!match) {
+      const ep = epitopeOf(candidate);
+      let best = null;
+      for (const row of epitopes) {
+        if (touched.has(row.limit.id)) continue;
+        const sim = epitopeSimilarity(ep, row.ep);
+        if (sim >= LIMIT_EPITOPE_MATCH && (!best || sim > best.sim)) best = { limit: row.limit, sim };
+      }
+      if (best) {
+        match = best.limit;
+        how = "epitope";
+        score = Math.round(best.sim * 100) / 100;
+      }
+    }
+
+    if (match) {
+      touched.add(match.id);
+      // A wall that was broken and is being described again has come back: the code that
+      // broke it was rolled back, or it was never really broken. Say so out loud.
+      const revived = match.status === "broken" || match.status === "dormant";
+      const before = match.status;
+      if (raw.id && raw.id !== match.id && !match.aliases.includes(raw.id)) match.aliases.push(raw.id);
+      Object.assign(match, candidate, {
+        status: match.status === "broken" ? "broken" : "standing",
+        silent_rounds: 0,
+        last_seen_at: now,
+      });
+      events.push({
+        limit_id: match.id,
+        type: revived && before === "dormant" ? "revived" : "confirmed",
+        matched_by: how,
+        similarity: score,
+        from_status: before,
+        to_status: match.status,
+        title: match.title,
+      });
+    } else {
+      const fresh = {
+        id: "lim_" + crypto.randomBytes(4).toString("hex"),
+        ...candidate,
+        status: "standing",
+        attempts: 0,
+        aliases: [],
+        silent_rounds: 0,
+        found_at: now,
+        last_seen_at: now,
+      };
+      kept.push(fresh);
+      epitopes.push({ limit: fresh, ep: epitopeOf(fresh) });
+      touched.add(fresh.id);
+      events.push({ limit_id: fresh.id, type: "found", to_status: "standing", title: fresh.title });
+    }
+  }
+
+  // Remanence: a standing wall nobody mentioned does not disappear. It holds its state, and
+  // only after LIMIT_COERCIVE_ROUNDS of silence does it stop being offered as a target —
+  // still in the file, still holding its scars, one mention away from coming back.
+  for (const l of kept) {
+    if (touched.has(l.id) || l.status === "broken") continue;
+    const silent = (Number(l.silent_rounds) || 0) + 1;
+    l.silent_rounds = silent;
+    if (l.status !== "dormant" && silent >= LIMIT_COERCIVE_ROUNDS) {
+      l.status = "dormant";
+      l.dormant_at = now;
+      events.push({ limit_id: l.id, type: "dormant", from_status: "standing", to_status: "dormant", silent_rounds: silent, title: l.title });
+    } else if (l.status !== "dormant") {
+      events.push({ limit_id: l.id, type: "remanent", to_status: l.status, silent_rounds: silent, title: l.title });
+    }
+  }
+
+  const order = { standing: 0, dormant: 1, broken: 2 };
+  const merged = kept.sort(
+    (a, b) => (order[a.status] ?? 0) - (order[b.status] ?? 0) || (b.unlock_score || 0) - (a.unlock_score || 0)
+  );
+  return { limits: merged, events };
+}
+
 async function introspect() {
   const body = readSelf();
   const dots = loadJson(DOTS_FILE, []);
@@ -3912,32 +4362,25 @@ async function introspect() {
   });
   const parsed = extractJson(raw);
   const incoming = Array.isArray(parsed) ? parsed : parsed.limits || [];
-  const broken = current.filter((l) => l.status === "broken");
-  const byId = new Map(current.map((l) => [l.id, l]));
-  const fresh = incoming
-    .filter((l) => l && l.title)
-    .map((l) => {
-      const prev = l.id && byId.get(l.id);
-      return {
-        id: prev ? prev.id : "lim_" + crypto.randomBytes(4).toString("hex"),
-        title: String(l.title).slice(0, 200),
-        category: String(l.category || "capability").slice(0, 40),
-        description: String(l.description || "").slice(0, 1200),
-        evidence: String(l.evidence || "").slice(0, 600),
-        why_it_stands: String(l.why_it_stands || "").slice(0, 600),
-        break_idea: String(l.break_idea || "").slice(0, 1200),
-        unlock_score: Number(l.unlock_score) || 5,
-        risk: Number(l.risk) || 5,
-        status: "standing",
-        attempts: (prev && prev.attempts) || 0,
-        found_at: (prev && prev.found_at) || new Date().toISOString(),
-      };
-    })
-    .filter((l) => !broken.some((b) => b.title === l.title))
-    .sort((a, b) => b.unlock_score - a.unlock_score);
-  const merged = [...broken, ...fresh];
-  saveJson(LIMITS_FILE, merged);
-  return { self_assessment: parsed.self_assessment || "", limits: merged };
+  const { limits, events } = mergeLimits(current, incoming);
+  saveJson(LIMITS_FILE, limits);
+  for (const e of events) appendLimitEvent({ ...e, source: "introspect" });
+  return {
+    self_assessment: parsed.self_assessment || "",
+    limits,
+    // What the mirror actually did to the register, so it is reviewable rather than assumed.
+    register: {
+      before: current.length,
+      after: limits.length,
+      found: events.filter((e) => e.type === "found").length,
+      confirmed: events.filter((e) => e.type === "confirmed").length,
+      renamed: events.filter((e) => e.matched_by === "epitope").length,
+      remanent: events.filter((e) => e.type === "remanent").length,
+      dormant: events.filter((e) => e.type === "dormant").length,
+      revived: events.filter((e) => e.type === "revived").length,
+      lost: 0,
+    },
+  };
 }
 
 // The pseudo-boundary a consolidation round works against. It is never "broken" and never
@@ -4221,7 +4664,7 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
       plan = consolidationPlan(before);
       prompt = buildConsolidationPrompt(evoId, plan, before, note);
     } else {
-      if (!limits.some((l) => l.status !== "broken")) {
+      if (!limits.some(isTargetable)) {
         await introspect();
         limits = loadJson(LIMITS_FILE, []);
       }
@@ -4549,9 +4992,20 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
     } else if (entry.verdict === "accepted") {
       limits = limits.map((l) =>
         l.id === target.id
-          ? { ...l, status: "broken", broken_at: entry.at, broken_by: evoId, attempts: (l.attempts || 0) + 1 }
+          ? { ...l, status: "broken", broken_at: entry.at, broken_by: evoId, attempts: (l.attempts || 0) + 1, silent_rounds: 0 }
           : l
       );
+      // Layer 10: breaking a wall is a state change like any other, and the account of how
+      // the register got here has to include the good news too, not only the drift.
+      appendLimitEvent({
+        limit_id: target.id,
+        type: "broken",
+        source: "forge",
+        evo_id: evoId,
+        from_status: target.status,
+        to_status: "broken",
+        title: target.title,
+      });
       state.last_evolution = entry.at;
       state.restart_required = true;
       slog(state, `🔥 ทำลายขอบเขต "${target.title}" สำเร็จ (${changes.length} ไฟล์) — รีสตาร์ตเพื่อใช้โค้ดใหม่`);
@@ -4643,13 +5097,18 @@ async function processInbox(state) {
   return harvested;
 }
 
-async function serendipityCycle(forceConnect = false) {
+/* scheduled = the clock called this, not a person. Layer 9 turns that distinction into the
+ * whole difference between the two: a scheduled cycle may do nothing at all unless the
+ * ignition is on, while a cycle a human asked for always harvests what is waiting. */
+async function serendipityCycle(forceConnect = false, scheduled = false) {
+  const ap = autopilot();
+  if (scheduled && !ap.master) return { skipped: "ignition_off" };
   // A forge round is comparing data/ byte-for-byte — a daemon write mid-round would
   // look like the forge tampering with its own memory and roll back a good evolution.
   if (busy || forging) return { skipped: forging ? "forging" : "busy" };
   busy = true;
   const state = loadState();
-  const result = { harvested: 0, connected: false, notified_forgotten: 0, scouted_evidence: 0, scouted_web: 0 };
+  const result = { harvested: 0, connected: false, notified_forgotten: 0, scouted_evidence: 0, scouted_web: 0, ignition: ap.master };
   try {
     // 1. Layer 0: harvest new dots from the inbox
     const harvested = await processInbox(state);
@@ -4669,7 +5128,9 @@ async function serendipityCycle(forceConnect = false) {
       ? (Date.now() - new Date(scoutState(state).last_web_scout).getTime()) / 3600000
       : Infinity;
     let scoutedWeb = [];
-    if (SCOUT_HOURS > 0 && scoutHoursSince >= SCOUT_HOURS) {
+    // Layer 9: leaving the house on a timer is exactly the kind of thing the ignition
+    // governs. The button in the Scout panel still goes out whenever it is pressed.
+    if (ap.can_scout && scoutHoursSince >= SCOUT_HOURS) {
       try {
         const run = await scoutWeb({ state });
         scoutedWeb = run.created;
@@ -4695,7 +5156,7 @@ async function serendipityCycle(forceConnect = false) {
     const distillHoursSince = state.last_distill
       ? (Date.now() - new Date(state.last_distill).getTime()) / 3600000
       : Infinity;
-    if (DISTILL_HOURS > 0 && !forging && distillHoursSince >= DISTILL_HOURS) {
+    if (ap.can_distill && !forging && distillHoursSince >= DISTILL_HOURS) {
       const owed = findRedundantClusters(loadJson(DOTS_FILE, []));
       if (owed.length) {
         slog(state, `The Distiller: พบคลัสเตอร์ซ้ำซ้อน ${owed.length} กลุ่ม — เริ่มรอบยุบรวมความรู้…`);
@@ -4741,12 +5202,15 @@ async function serendipityCycle(forceConnect = false) {
     const hoursSince = state.last_auto_run
       ? (Date.now() - new Date(state.last_auto_run).getTime()) / 3600000
       : Infinity;
+    // Layer 9: an Opus round is the most expensive thing this loop can decide to do by
+    // itself, so with the ignition off it never decides. forceConnect is a person asking.
     const shouldConnect =
       forceConnect ||
-      harvested.length > 0 ||
-      // Dots the system found for itself are not a user action, so they wait for the same
-      // cost guard as a forgotten-dot revival before they may spend an Opus round.
-      ((selfFound.length > 0 || forgotten.length > 0) && hoursSince >= AUTO_HOURS);
+      (ap.can_connect &&
+        (harvested.length > 0 ||
+          // Dots the system found for itself are not a user action, so they wait for the same
+          // cost guard as a forgotten-dot revival before they may spend an Opus round.
+          ((selfFound.length > 0 || forgotten.length > 0) && hoursSince >= AUTO_HOURS)));
 
     if (shouldConnect && enriched.length >= 2) {
       const seed = harvested.length
@@ -4778,7 +5242,9 @@ async function serendipityCycle(forceConnect = false) {
     const evoHoursSince = state.last_evolution
       ? (Date.now() - new Date(state.last_evolution).getTime()) / 3600000
       : Infinity;
-    if (EVOLVE_HOURS > 0 && !forging && evoHoursSince >= EVOLVE_HOURS) {
+    // Layer 9: the switch that has to be armed on purpose. Everything else the engine does
+    // on a timer can be undone by deleting a row; this one rewrites the engine itself.
+    if (ap.can_evolve && !forging && evoHoursSince >= EVOLVE_HOURS) {
       slog(state, "Self-Forge: ถึงรอบวิวัฒนาการ — กำลังส่องกระจกหาขอบเขตของตัวเอง…");
       saveState(state);
       busy = false;
@@ -4805,7 +5271,7 @@ async function serendipityCycle(forceConnect = false) {
           evo = await attemptEvolution({ auto: true, mode: "consolidation" });
         } else {
           const standing = loadJson(LIMITS_FILE, []).filter(
-            (l) => l.status !== "broken" && !attemptBudget(l, evoLedger).exhausted
+            (l) => isTargetable(l) && !attemptBudget(l, evoLedger).exhausted
           );
           if (!standing.length) await introspect();
           evo = await attemptEvolution({ auto: true });
@@ -4936,13 +5402,64 @@ const server = http.createServer(async (req, res) => {
         inbox_pending: inboxPending,
         check_interval_min: CHECK_MIN,
         busy,
+        // Layer 9: the header renders the engine's real state, not the state a reader
+        // assumes from the fact that the page loaded.
+        autopilot: autopilotStatus(),
+        engine_cli: cliHealth,
         log: state.log.slice(-10),
       });
     }
     if (p === "/api/serendipity/scan" && req.method === "POST") {
       const body = await readBody(req);
-      const result = await serendipityCycle(Boolean(body.forceConnect));
+      // A person pressed a button: this cycle runs whatever the ignition says.
+      const result = await serendipityCycle(Boolean(body.forceConnect), false);
       return sendJson(res, 200, result);
+    }
+
+    /* ---- Layer 9: The Ignition — the owner's switch over every clock in the engine ---- */
+    // The stop button proper: cut the ignition AND kill whatever is running right now.
+    // A forge round killed mid-write fails its own gates and gets rolled back by the same
+    // path as any other failed round — there is no special "cancelled" state to maintain.
+    if (p === "/api/autopilot/stop" && req.method === "POST") {
+      const wasForging = forging;
+      saveAutopilot({ master: false });
+      const killed = killAllClaude("ผู้ใช้กดหยุดฉุกเฉิน");
+      const state = loadState();
+      slog(
+        state,
+        `🛑 หยุดฉุกเฉิน: ปิดสวิตช์ใหญ่${killed ? ` และหยุดงาน AI ที่กำลังทำอยู่ ${killed} งาน` : ""}` +
+          (wasForging ? " — รอบหลอมตัวเองที่ค้างอยู่จะตกด่านและถูกย้อนไฟล์กลับอัตโนมัติ" : "")
+      );
+      saveState(state);
+      return sendJson(res, 200, { stopped: true, killed, was_forging: wasForging, autopilot: autopilotStatus() });
+    }
+    if (p === "/api/autopilot" && req.method === "GET") {
+      return sendJson(res, 200, autopilotStatus());
+    }
+    if (p === "/api/autopilot" && req.method === "POST") {
+      const body = await readBody(req);
+      const next = {};
+      for (const k of ["master", ...AUTOPILOT_KEYS]) {
+        if (k in body) {
+          if (typeof body[k] !== "boolean") return sendJson(res, 400, { error: `${k} ต้องเป็น true/false` });
+          next[k] = body[k];
+        }
+      }
+      if (!Object.keys(next).length) return sendJson(res, 400, { error: "ไม่มีสวิตช์ที่จะเปลี่ยน" });
+      const before = loadAutopilot();
+      saveAutopilot(next);
+      const after = autopilotStatus();
+      const state = loadState();
+      const changed = Object.keys(next).filter((k) => before[k] !== next[k]);
+      if (changed.length) {
+        slog(
+          state,
+          changed.map((k) => `${AUTOPILOT_LABELS[k] || k}: ${next[k] ? "เปิด" : "ปิด"}`).join(" · ") +
+            (next.master === false ? " — เครื่องยนต์หยุดเดินเอง ทุกปุ่มยังกดได้" : "")
+        );
+        saveState(state);
+      }
+      return sendJson(res, 200, after);
     }
 
     /* ---- Layer 7: The Scout — knowledge that walks in by itself ---- */
@@ -5351,10 +5868,10 @@ const server = http.createServer(async (req, res) => {
             cap_earned: b.earned,
             cap_max: b.max,
             distinct_approaches: b.distinct_approaches,
-            exhausted: l.status !== "broken" && b.exhausted,
+            exhausted: isTargetable(l) && b.exhausted,
             cap_note: b.note,
             is_next_target: Boolean(next && next.id === l.id),
-            failed_attempts: failureDossier(l.id, ledger).map((d) => ({
+            failed_attempts: failureDossier(l, ledger).map((d) => ({
               evo_id: d.evo_id,
               at: d.at,
               reason: d.reason,
@@ -5365,6 +5882,42 @@ const server = http.createServer(async (req, res) => {
           };
         })
       );
+    }
+    /* ---- Layer 10: The RemLedger — the register as an accumulating account ---- */
+    // Every state change any wall has ever made. limits.json says what is true now;
+    // this says how it got that way, and it is the only one of the two that cannot lie
+    // by omission — nothing is ever rewritten here, only appended.
+    if (p === "/api/limits/events" && req.method === "GET") {
+      const wanted = String(url.searchParams.get("limitId") || "");
+      const limits = loadJson(LIMITS_FILE, []);
+      const limit = wanted ? limits.find((l) => limitIdSet(l).includes(wanted)) : null;
+      if (wanted && !limit) return sendJson(res, 404, { error: "ไม่พบกำแพงนี้ในทะเบียน" });
+      const events = readLimitEvents(limit);
+      return sendJson(res, 200, {
+        limit: limit ? { id: limit.id, title: limit.title, status: limit.status, aliases: limit.aliases || [] } : null,
+        total: events.length,
+        coercive_rounds: LIMIT_COERCIVE_ROUNDS,
+        epitope_match: LIMIT_EPITOPE_MATCH,
+        events: events.slice(-200),
+      });
+    }
+    // The merge, drivable by hand. The whole point of pulling mergeLimits() out as a pure
+    // function: the behaviour that decides whether a wall's history survives can be tested
+    // with invented input, in a second, without spending a 12-minute introspection.
+    if (p === "/api/limits/merge/dryrun" && req.method === "POST") {
+      const body = await readBody(req);
+      const current = Array.isArray(body.current) ? body.current : loadJson(LIMITS_FILE, []);
+      const incoming = Array.isArray(body.incoming) ? body.incoming : [];
+      const { limits, events } = mergeLimits(current, incoming, { now: body.now || undefined });
+      return sendJson(res, 200, {
+        // Nothing is written: this is the answer to "what would the mirror do to the register".
+        applied: false,
+        before: current.length,
+        after: limits.length,
+        lost: current.filter((c) => !limits.some((l) => limitIdSet(l).includes(c.id))).map((c) => c.id),
+        limits,
+        events,
+      });
     }
     // The scar tissue, made inspectable: exactly what the next forge round will be told
     // about this wall — including the real prompt it will read.
@@ -5411,7 +5964,7 @@ const server = http.createServer(async (req, res) => {
           break_idea: target.break_idea,
         },
         budget: hist.budget,
-        blocked: target.status !== "broken" && hist.budget.exhausted,
+        blocked: isTargetable(target) && hist.budget.exhausted,
         history: hist.dossier,
         failure_block: hist.block,
         // Layer 6.8: and the other block — what the usage ledger says about what already exists.
@@ -5762,9 +6315,20 @@ const server = http.createServer(async (req, res) => {
         entry.rolled_back_at = new Date().toISOString();
         // The boundary stands again.
         const limits = loadJson(LIMITS_FILE, []).map((l) =>
-          l.id === entry.limit.id ? { ...l, status: "standing", broken_at: null, broken_by: null } : l
+          l.id === entry.limit.id
+            ? { ...l, status: "standing", broken_at: null, broken_by: null, silent_rounds: 0, last_seen_at: entry.rolled_back_at }
+            : l
         );
         saveJson(LIMITS_FILE, limits);
+        appendLimitEvent({
+          limit_id: entry.limit.id,
+          type: "unbroken",
+          source: "rollback",
+          evo_id: entry.id,
+          from_status: "broken",
+          to_status: "standing",
+          title: entry.limit.title,
+        });
         saveJson(EVO_FILE, ledger);
         const state = loadState();
         state.restart_required = true;
@@ -5922,6 +6486,34 @@ server.on("error", (e) => {
 });
 
 // The first boundary this system ever broke was the one that said it couldn't touch itself.
+/* Layer 10: walls recorded before the RemLedger existed have no aliases, no silence counter
+ * and no last-seen stamp. Give them one, once, so the first merge after the upgrade treats
+ * them as remanent rather than as strangers — and record the migration as an event, because
+ * a register that quietly grows fields is exactly the thing this layer exists to stop. */
+function migrateLimits() {
+  const limits = loadJson(LIMITS_FILE, []);
+  if (!limits.length) return;
+  let changed = 0;
+  const now = new Date().toISOString();
+  for (const l of limits) {
+    if (Array.isArray(l.aliases) && typeof l.silent_rounds === "number" && l.last_seen_at) continue;
+    if (!Array.isArray(l.aliases)) l.aliases = [];
+    if (typeof l.silent_rounds !== "number") l.silent_rounds = 0;
+    if (!l.last_seen_at) l.last_seen_at = l.broken_at || l.found_at || now;
+    changed++;
+  }
+  if (!changed) return;
+  saveJson(LIMITS_FILE, limits);
+  appendLimitEvent({
+    limit_id: null,
+    type: "migrated",
+    source: "boot",
+    count: changed,
+    note: "ทะเบียนเดิมถูกยกระดับเป็นบัญชีสะสม (Layer 10) — ไม่มีข้อไหนถูกลบ",
+  });
+  console.log(`  [remledger] ยกระดับทะเบียนกำแพงเดิม ${changed} ข้อเป็นบัญชีสะสม`);
+}
+
 function seedLimits() {
   if (fs.existsSync(LIMITS_FILE)) return;
   saveJson(LIMITS_FILE, [
@@ -5951,6 +6543,10 @@ server.listen(PORT, () => {
   fs.mkdirSync(EVO_DIR, { recursive: true });
   fs.mkdirSync(PROOF_DIR, { recursive: true });
   seedLimits();
+  migrateLimits();
+  // Layer 9: the switch must exist on disk before the first forge round reads it, or a round
+  // that creates it could quietly hand itself an autopilot no one turned on.
+  ensureAutopilotFile();
   // Layer 6.6: pick the usage ledger back up where the last process left it, so an engine
   // that restarts every day never mistakes its own amnesia for a dead endpoint.
   loadUsage();
@@ -5973,6 +6569,7 @@ server.listen(PORT, () => {
   // make it rewrite its own repository ninety seconds later without being asked.
   const boot = loadState();
   const bootScout = scoutState(boot);
+  let bootDirty = false;
   if (!boot.last_evolution || !bootScout.last_web_scout || !boot.last_distill) {
     const now = new Date().toISOString();
     if (!boot.last_evolution) boot.last_evolution = now;
@@ -5980,10 +6577,20 @@ server.listen(PORT, () => {
     if (!bootScout.last_web_scout) {
       boot.scout = { ...bootScout, last_web_scout: now };
     }
-    saveState(boot);
+    bootDirty = true;
   }
+  // "restart_required" means the code on disk is ahead of the code in memory. At the moment
+  // this process starts, that is false by definition — it *is* the code on disk. Leaving the
+  // flag set made the banner outlive the thing it was warning about, so every later restart
+  // looked equally urgent and the one that mattered stopped being visible.
+  if (boot.restart_required) {
+    boot.restart_required = false;
+    slog(boot, "บูตด้วยโค้ดล่าสุดบนดิสก์แล้ว — ป้าย \"ต้องรีสตาร์ต\" ถูกเคลียร์");
+    bootDirty = true;
+  }
+  if (bootDirty) saveState(boot);
 
-  console.log(`\n  The Dot-Connector AI v4 (The Self-Forge)`);
+  console.log(`\n  The Dot-Connector AI v5 (The Self-Forge · The Ignition · The RemLedger)`);
   console.log(`  engine:  claude cli (connect: ${MODEL}, harvest: ${HARVEST_MODEL})`);
   console.log(`  forge:   ${FORGE_MODEL} — reads and rewrites this very file`);
   console.log(`  inbox:   ${INBOX_DIR}`);
@@ -5992,9 +6599,31 @@ server.listen(PORT, () => {
   console.log(`  scout:   ${SCOUT_HOURS > 0 ? `every ${SCOUT_HOURS}h via ${SCOUT_MODEL} (SCOUT_HOURS=0 to disable)` : "off"} — evidence harvest always on`);
   console.log(`  distill: ${DISTILL_HOURS > 0 ? `every ${DISTILL_HOURS}h (DISTILL_HOURS=0 to disable)` : "off"} — connect prompt capped at ${CONNECT_FULL_DOTS} full dots`);
   console.log(`  adopt:   rounds scored ${ADOPTION_DAYS}d after shipping, once the ledger has seen ${ADOPTION_MIN_REQUESTS} requests (weight ${ADOPTION_WEIGHT})`);
+  const ap = autopilot();
+  console.log(
+    `  ignition: ${ap.master ? "ON" : "OFF"} — ${
+      ap.master
+        ? [["connect", ap.can_connect], ["scout", ap.can_scout], ["distill", ap.can_distill], ["evolve", ap.can_evolve]]
+            .map(([k, v]) => `${k}:${v ? "on" : "off"}`)
+            .join(" ")
+        : "ไม่มีอะไรทำงานตามเวลา · ทุกปุ่มในหน้าเว็บยังใช้ได้ตามปกติ"
+    }`
+  );
   console.log(`  open:    http://localhost:${PORT}\n`);
 
-  // Serendipity daemon: first cycle after 90s, then on interval
-  setTimeout(() => serendipityCycle(false), 90 * 1000);
-  setInterval(() => serendipityCycle(false), CHECK_MIN * 60 * 1000);
+  // Ask the one external dependency whether it is there, before anything needs it to be.
+  checkClaudeCli().then((h) => {
+    if (h.ok) return console.log(`  [preflight] claude CLI พร้อมใช้งาน (${h.version})`);
+    console.log(`  [preflight] ⚠ เรียก claude CLI ไม่ได้: ${h.error}`);
+    console.log(`  [preflight]   ทุกชั้นที่ต้องใช้ AI จะล้มเหลวจนกว่าจะแก้ — ลองรัน "claude --version" ในเทอร์มินัลนี้`);
+    const st = loadState();
+    slog(st, `⚠ ตรวจก่อนเริ่ม: เรียก claude CLI ไม่ได้ (${h.error}) — ชั้นที่ต้องใช้ AI จะยังทำงานไม่ได้`);
+    saveState(st);
+  });
+
+  // Serendipity daemon: first cycle after 90s, then on interval. Both are scheduled calls —
+  // with the ignition off they return immediately without reading, writing or spending
+  // anything, and the timer stays alive so the switch takes effect without a restart.
+  setTimeout(() => serendipityCycle(false, true), 90 * 1000);
+  setInterval(() => serendipityCycle(false, true), CHECK_MIN * 60 * 1000);
 });
