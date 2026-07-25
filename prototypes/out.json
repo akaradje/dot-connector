@@ -1,0 +1,1499 @@
+{
+  "corpus": {
+    "claims": 243,
+    "links": 322,
+    "inherited_links": 282,
+    "domains": [
+      "Growth",
+      "Infra",
+      "Pricing",
+      "Roadmap"
+    ]
+  },
+  "percolation": {
+    "p": 0.876,
+    "p_c_molloy_reed": 0.222,
+    "p_c_empirical": 0.45,
+    "p_over_pc": 3.94,
+    "above_ceiling": true,
+    "giant_cell_pct": 93.4,
+    "curve": {
+      "grid": [
+        0.0,
+        0.025,
+        0.05,
+        0.075,
+        0.1,
+        0.125,
+        0.15,
+        0.175,
+        0.2,
+        0.225,
+        0.25,
+        0.275,
+        0.3,
+        0.325,
+        0.35,
+        0.375,
+        0.4,
+        0.425,
+        0.45,
+        0.475,
+        0.5,
+        0.525,
+        0.55,
+        0.575,
+        0.6,
+        0.625,
+        0.65,
+        0.675,
+        0.7,
+        0.725,
+        0.75,
+        0.775,
+        0.8,
+        0.825,
+        0.85,
+        0.875,
+        0.9,
+        0.925,
+        0.95,
+        0.975,
+        1.0
+      ],
+      "giant": [
+        0.004115226337448559,
+        0.01063100137174211,
+        0.014403292181069961,
+        0.017832647462277088,
+        0.022462277091906718,
+        0.028120713305898496,
+        0.03806584362139918,
+        0.043552812071330584,
+        0.048353909465020585,
+        0.05504115226337449,
+        0.0644718792866941,
+        0.08933470507544582,
+        0.100480109739369,
+        0.12602880658436208,
+        0.12877229080932787,
+        0.20456104252400553,
+        0.20884773662551437,
+        0.28652263374485604,
+        0.2925240054869685,
+        0.36488340192043894,
+        0.45233196159122085,
+        0.46827846364883413,
+        0.5380658436213992,
+        0.6078532235939642,
+        0.6267146776406036,
+        0.6642661179698216,
+        0.727366255144033,
+        0.7625171467764059,
+        0.7585733882030176,
+        0.8103566529492454,
+        0.8331618655692731,
+        0.8482510288065842,
+        0.8870027434842251,
+        0.8983196159122087,
+        0.9195816186556928,
+        0.9360425240054872,
+        0.9502743484224966,
+        0.9653635116598079,
+        0.9737654320987654,
+        0.9881687242798356,
+        0.9958847736625517
+      ],
+      "chi": [
+        1.0,
+        1.0571966732157771,
+        1.1253135527211442,
+        1.2375879117019253,
+        1.3011837355906202,
+        1.3892650687417163,
+        1.5929547411689882,
+        1.6448813209077429,
+        1.9071455990319583,
+        2.1460495950178835,
+        2.432728679984179,
+        2.867940110882069,
+        3.1754787525489996,
+        3.432025491365197,
+        3.848308618822456,
+        3.9386001784658577,
+        4.442740569403308,
+        5.084392056145336,
+        5.097354880378286,
+        3.797058225745058,
+        3.4788283965147797,
+        4.444653175843867,
+        3.1110451446820657,
+        2.8723550506605258,
+        3.0575951136230426,
+        3.59114106408578,
+        2.5969356848963283,
+        2.139481392969993,
+        2.3353399254536966,
+        1.8123351938352548,
+        2.010770354305876,
+        2.4512495589293826,
+        1.5201585895263687,
+        1.5205494807810345,
+        1.457504347562902,
+        1.3977403856177075,
+        1.4288196552902432,
+        1.3333844396344394,
+        1.3093314093314092,
+        1.0910714285714285,
+        1.0
+      ],
+      "p_c_empirical": 0.45
+    }
+  },
+  "per_domain": {
+    "Growth": {
+      "claims": 63,
+      "links": 57,
+      "p": 0.877,
+      "p_c": 0.425,
+      "ratio": 2.06,
+      "giant_cell_pct": 52.4
+    },
+    "Infra": {
+      "claims": 62,
+      "links": 52,
+      "p": 0.846,
+      "p_c": 0.277,
+      "ratio": 3.06,
+      "giant_cell_pct": 33.9
+    },
+    "Pricing": {
+      "claims": 60,
+      "links": 52,
+      "p": 0.865,
+      "p_c": 0.34,
+      "ratio": 2.55,
+      "giant_cell_pct": 50.0
+    },
+    "Roadmap": {
+      "claims": 58,
+      "links": 52,
+      "p": 0.827,
+      "p_c": 0.204,
+      "ratio": 4.06,
+      "giant_cell_pct": 51.7
+    }
+  },
+  "load_bearing": [
+    {
+      "rank": 1,
+      "claim": "Growth:root0",
+      "text": "CAC payback is 11 months",
+      "domain": "Growth",
+      "source": "primary",
+      "blast_radius": 56,
+      "blast_pct": 23.0
+    },
+    {
+      "rank": 2,
+      "claim": "Pricing:root0",
+      "text": "enterprise tier converts at 4%",
+      "domain": "Pricing",
+      "source": "primary",
+      "blast_radius": 51,
+      "blast_pct": 21.0
+    },
+    {
+      "rank": 3,
+      "claim": "Roadmap:root0",
+      "text": "customers want automation, not analytics",
+      "domain": "Roadmap",
+      "source": "primary",
+      "blast_radius": 47,
+      "blast_pct": 19.3
+    },
+    {
+      "rank": 4,
+      "claim": "Infra:root1",
+      "text": "single-region is acceptable",
+      "domain": "Infra",
+      "source": "primary",
+      "blast_radius": 36,
+      "blast_pct": 14.8
+    },
+    {
+      "rank": 5,
+      "claim": "Infra:root2",
+      "text": "storage grows 8%/mo",
+      "domain": "Infra",
+      "source": "primary",
+      "blast_radius": 23,
+      "blast_pct": 9.5
+    },
+    {
+      "rank": 6,
+      "claim": "Pricing:root2",
+      "text": "COGS per seat is $3.10",
+      "domain": "Pricing",
+      "source": "primary",
+      "blast_radius": 19,
+      "blast_pct": 7.8
+    },
+    {
+      "rank": 7,
+      "claim": "Growth:c2",
+      "text": "Growth derived claim #2",
+      "domain": "Growth",
+      "source": "doc",
+      "blast_radius": 19,
+      "blast_pct": 7.8
+    },
+    {
+      "rank": 8,
+      "claim": "Growth:c4",
+      "text": "Growth derived claim #4",
+      "domain": "Growth",
+      "source": "doc",
+      "blast_radius": 18,
+      "blast_pct": 7.4
+    },
+    {
+      "rank": 9,
+      "claim": "Growth:root1",
+      "text": "SMB channel is saturated",
+      "domain": "Growth",
+      "source": "primary",
+      "blast_radius": 16,
+      "blast_pct": 6.6
+    },
+    {
+      "rank": 10,
+      "claim": "Infra:root0",
+      "text": "p99 latency budget is 300ms",
+      "domain": "Infra",
+      "source": "primary",
+      "blast_radius": 16,
+      "blast_pct": 6.6
+    },
+    {
+      "rank": 11,
+      "claim": "Pricing:c1",
+      "text": "Pricing derived claim #1",
+      "domain": "Pricing",
+      "source": "doc",
+      "blast_radius": 15,
+      "blast_pct": 6.2
+    },
+    {
+      "rank": 12,
+      "claim": "Pricing:root1",
+      "text": "churn is price-driven",
+      "domain": "Pricing",
+      "source": "primary",
+      "blast_radius": 14,
+      "blast_pct": 5.8
+    }
+  ],
+  "honeycomb": {
+    "ceiling_nodes": 13,
+    "ceiling_frac": 0.05,
+    "largest_cell_before": 227,
+    "largest_cell_after": 13,
+    "under_ceiling": true,
+    "cells_after": 38,
+    "cell_sizes_after": [
+      13,
+      13,
+      13,
+      13,
+      13,
+      12,
+      11,
+      11,
+      10,
+      10,
+      9,
+      9
+    ],
+    "cuts": [
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Infra:c1",
+        "to_text": "Infra derived claim #1",
+        "domain": "Infra",
+        "traffic": 5878.9,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "Pricing:c0",
+        "to_text": "Pricing derived claim #0",
+        "domain": "Pricing",
+        "traffic": 5876.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "Pricing:c1",
+        "to_text": "Pricing derived claim #1",
+        "domain": "Pricing",
+        "traffic": 4838.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Growth:root0",
+        "from_text": "CAC payback is 11 months",
+        "to": "Growth:c4",
+        "to_text": "Growth derived claim #4",
+        "domain": "Growth",
+        "traffic": 4939.7,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "AI:gen16",
+        "to_text": "AI-generated synthesis #16",
+        "domain": "Pricing",
+        "traffic": 4470.7,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:c2",
+        "from_text": "Pricing derived claim #2",
+        "to": "Pricing:c35",
+        "to_text": "Pricing derived claim #35",
+        "domain": "Pricing",
+        "traffic": 4714.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Growth:root0",
+        "from_text": "CAC payback is 11 months",
+        "to": "Growth:c14",
+        "to_text": "Growth derived claim #14",
+        "domain": "Growth",
+        "traffic": 5879.4,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Growth:root0",
+        "from_text": "CAC payback is 11 months",
+        "to": "Growth:c2",
+        "to_text": "Growth derived claim #2",
+        "domain": "Growth",
+        "traffic": 6016.2,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:c31",
+        "from_text": "Pricing derived claim #31",
+        "to": "Growth:c17",
+        "to_text": "Growth derived claim #17",
+        "domain": "Growth",
+        "traffic": 6556.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Infra:c5",
+        "to_text": "Infra derived claim #5",
+        "domain": "Infra",
+        "traffic": 6192.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Growth:c2",
+        "from_text": "Growth derived claim #2",
+        "to": "Growth:c5",
+        "to_text": "Growth derived claim #5",
+        "domain": "Growth",
+        "traffic": 7938.1,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:c46",
+        "from_text": "Pricing derived claim #46",
+        "to": "AI:gen6",
+        "to_text": "AI-generated synthesis #6",
+        "domain": "Roadmap",
+        "traffic": 8488.8,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:c14",
+        "from_text": "Pricing derived claim #14",
+        "to": "AI:gen32",
+        "to_text": "AI-generated synthesis #32",
+        "domain": "Growth",
+        "traffic": 9874.4,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "AI:gen31",
+        "from_text": "AI-generated synthesis #31",
+        "to": "AI:gen33",
+        "to_text": "AI-generated synthesis #33",
+        "domain": "Growth",
+        "traffic": 14757.8,
+        "largest_cell_after": 227,
+        "largest_cell_after_pct": 93.4
+      },
+      {
+        "from": "Pricing:c5",
+        "from_text": "Pricing derived claim #5",
+        "to": "Pricing:c23",
+        "to_text": "Pricing derived claim #23",
+        "domain": "Pricing",
+        "traffic": 25724.0,
+        "largest_cell_after": 118,
+        "largest_cell_after_pct": 48.6
+      },
+      {
+        "from": "Growth:c4",
+        "from_text": "Growth derived claim #4",
+        "to": "Roadmap:c6",
+        "to_text": "Roadmap derived claim #6",
+        "domain": "Roadmap",
+        "traffic": 1814.1,
+        "largest_cell_after": 118,
+        "largest_cell_after_pct": 48.6
+      },
+      {
+        "from": "Growth:c4",
+        "from_text": "Growth derived claim #4",
+        "to": "Growth:c42",
+        "to_text": "Growth derived claim #42",
+        "domain": "Growth",
+        "traffic": 1897.5,
+        "largest_cell_after": 118,
+        "largest_cell_after_pct": 48.6
+      },
+      {
+        "from": "Roadmap:c21",
+        "from_text": "Roadmap derived claim #21",
+        "to": "Roadmap:c32",
+        "to_text": "Roadmap derived claim #32",
+        "domain": "Roadmap",
+        "traffic": 2802.0,
+        "largest_cell_after": 118,
+        "largest_cell_after_pct": 48.6
+      },
+      {
+        "from": "Infra:root0",
+        "from_text": "p99 latency budget is 300ms",
+        "to": "Infra:c17",
+        "to_text": "Infra derived claim #17",
+        "domain": "Infra",
+        "traffic": 2331.0,
+        "largest_cell_after": 118,
+        "largest_cell_after_pct": 48.6
+      },
+      {
+        "from": "Growth:c5",
+        "from_text": "Growth derived claim #5",
+        "to": "AI:gen21",
+        "to_text": "AI-generated synthesis #21",
+        "domain": "Roadmap",
+        "traffic": 3762.0,
+        "largest_cell_after": 109,
+        "largest_cell_after_pct": 44.9
+      },
+      {
+        "from": "Pricing:root2",
+        "from_text": "COGS per seat is $3.10",
+        "to": "Pricing:c20",
+        "to_text": "Pricing derived claim #20",
+        "domain": "Pricing",
+        "traffic": 1800.0,
+        "largest_cell_after": 100,
+        "largest_cell_after_pct": 41.2
+      },
+      {
+        "from": "Roadmap:c26",
+        "from_text": "Roadmap derived claim #26",
+        "to": "AI:gen8",
+        "to_text": "AI-generated synthesis #8",
+        "domain": "Roadmap",
+        "traffic": 1524.1,
+        "largest_cell_after": 100,
+        "largest_cell_after_pct": 41.2
+      },
+      {
+        "from": "Pricing:root2",
+        "from_text": "COGS per seat is $3.10",
+        "to": "Roadmap:c1",
+        "to_text": "Roadmap derived claim #1",
+        "domain": "Roadmap",
+        "traffic": 2213.5,
+        "largest_cell_after": 100,
+        "largest_cell_after_pct": 41.2
+      },
+      {
+        "from": "Growth:c46",
+        "from_text": "Growth derived claim #46",
+        "to": "AI:gen0",
+        "to_text": "AI-generated synthesis #0",
+        "domain": "Growth",
+        "traffic": 3432.0,
+        "largest_cell_after": 99,
+        "largest_cell_after_pct": 40.7
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Infra:c26",
+        "to_text": "Infra derived claim #26",
+        "domain": "Infra",
+        "traffic": 1652.8,
+        "largest_cell_after": 99,
+        "largest_cell_after_pct": 40.7
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c10",
+        "to_text": "Roadmap derived claim #10",
+        "domain": "Roadmap",
+        "traffic": 1385.7,
+        "largest_cell_after": 99,
+        "largest_cell_after_pct": 40.7
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c6",
+        "to_text": "Roadmap derived claim #6",
+        "domain": "Roadmap",
+        "traffic": 1747.2,
+        "largest_cell_after": 99,
+        "largest_cell_after_pct": 40.7
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "AI:gen15",
+        "to_text": "AI-generated synthesis #15",
+        "domain": "Infra",
+        "traffic": 1779.0,
+        "largest_cell_after": 99,
+        "largest_cell_after_pct": 40.7
+      },
+      {
+        "from": "AI:gen3",
+        "from_text": "AI-generated synthesis #3",
+        "to": "AI:gen32",
+        "to_text": "AI-generated synthesis #32",
+        "domain": "Growth",
+        "traffic": 2380.0,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c21",
+        "to_text": "Roadmap derived claim #21",
+        "domain": "Roadmap",
+        "traffic": 1053.8,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "Pricing:c37",
+        "to_text": "Pricing derived claim #37",
+        "domain": "Pricing",
+        "traffic": 1582.0,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Growth:c24",
+        "to_text": "Growth derived claim #24",
+        "domain": "Growth",
+        "traffic": 1624.5,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Pricing:c5",
+        "from_text": "Pricing derived claim #5",
+        "to": "AI:gen31",
+        "to_text": "AI-generated synthesis #31",
+        "domain": "Growth",
+        "traffic": 1615.3,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Infra:c30",
+        "from_text": "Infra derived claim #30",
+        "to": "AI:gen28",
+        "to_text": "AI-generated synthesis #28",
+        "domain": "Growth",
+        "traffic": 2749.8,
+        "largest_cell_after": 85,
+        "largest_cell_after_pct": 35.0
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Growth:c6",
+        "to_text": "Growth derived claim #6",
+        "domain": "Growth",
+        "traffic": 3500.0,
+        "largest_cell_after": 78,
+        "largest_cell_after_pct": 32.1
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "Growth:c23",
+        "to_text": "Growth derived claim #23",
+        "domain": "Growth",
+        "traffic": 1452.5,
+        "largest_cell_after": 78,
+        "largest_cell_after_pct": 32.1
+      },
+      {
+        "from": "Growth:root1",
+        "from_text": "SMB channel is saturated",
+        "to": "Growth:c0",
+        "to_text": "Growth derived claim #0",
+        "domain": "Growth",
+        "traffic": 1318.3,
+        "largest_cell_after": 78,
+        "largest_cell_after_pct": 32.1
+      },
+      {
+        "from": "Growth:c0",
+        "from_text": "Growth derived claim #0",
+        "to": "AI:gen20",
+        "to_text": "AI-generated synthesis #20",
+        "domain": "Pricing",
+        "traffic": 1634.3,
+        "largest_cell_after": 78,
+        "largest_cell_after_pct": 32.1
+      },
+      {
+        "from": "Infra:c10",
+        "from_text": "Infra derived claim #10",
+        "to": "Infra:c16",
+        "to_text": "Infra derived claim #16",
+        "domain": "Infra",
+        "traffic": 2970.0,
+        "largest_cell_after": 50,
+        "largest_cell_after_pct": 20.6
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "Pricing:c5",
+        "to_text": "Pricing derived claim #5",
+        "domain": "Pricing",
+        "traffic": 413.8,
+        "largest_cell_after": 50,
+        "largest_cell_after_pct": 20.6
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Infra:c23",
+        "to_text": "Infra derived claim #23",
+        "domain": "Infra",
+        "traffic": 622.0,
+        "largest_cell_after": 50,
+        "largest_cell_after_pct": 20.6
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Infra:c15",
+        "to_text": "Infra derived claim #15",
+        "domain": "Infra",
+        "traffic": 834.1,
+        "largest_cell_after": 50,
+        "largest_cell_after_pct": 20.6
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "AI:gen19",
+        "to_text": "AI-generated synthesis #19",
+        "domain": "Infra",
+        "traffic": 1200.0,
+        "largest_cell_after": 45,
+        "largest_cell_after_pct": 18.5
+      },
+      {
+        "from": "Pricing:c1",
+        "from_text": "Pricing derived claim #1",
+        "to": "Pricing:c45",
+        "to_text": "Pricing derived claim #45",
+        "domain": "Pricing",
+        "traffic": 508.7,
+        "largest_cell_after": 45,
+        "largest_cell_after_pct": 18.5
+      },
+      {
+        "from": "Pricing:root2",
+        "from_text": "COGS per seat is $3.10",
+        "to": "Pricing:c29",
+        "to_text": "Pricing derived claim #29",
+        "domain": "Pricing",
+        "traffic": 832.0,
+        "largest_cell_after": 35,
+        "largest_cell_after_pct": 14.4
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c14",
+        "to_text": "Roadmap derived claim #14",
+        "domain": "Roadmap",
+        "traffic": 348.0,
+        "largest_cell_after": 33,
+        "largest_cell_after_pct": 13.6
+      },
+      {
+        "from": "Pricing:c3",
+        "from_text": "Pricing derived claim #3",
+        "to": "Growth:c34",
+        "to_text": "Growth derived claim #34",
+        "domain": "Growth",
+        "traffic": 532.0,
+        "largest_cell_after": 32,
+        "largest_cell_after_pct": 13.2
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "Infra:c10",
+        "to_text": "Infra derived claim #10",
+        "domain": "Infra",
+        "traffic": 212.0,
+        "largest_cell_after": 32,
+        "largest_cell_after_pct": 13.2
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "Pricing:c26",
+        "to_text": "Pricing derived claim #26",
+        "domain": "Pricing",
+        "traffic": 338.0,
+        "largest_cell_after": 32,
+        "largest_cell_after_pct": 13.2
+      },
+      {
+        "from": "Pricing:c17",
+        "from_text": "Pricing derived claim #17",
+        "to": "AI:gen9",
+        "to_text": "AI-generated synthesis #9",
+        "domain": "Infra",
+        "traffic": 510.0,
+        "largest_cell_after": 30,
+        "largest_cell_after_pct": 12.3
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Pricing:c6",
+        "to_text": "Pricing derived claim #6",
+        "domain": "Pricing",
+        "traffic": 168.7,
+        "largest_cell_after": 30,
+        "largest_cell_after_pct": 12.3
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Pricing:c2",
+        "to_text": "Pricing derived claim #2",
+        "domain": "Pricing",
+        "traffic": 208.0,
+        "largest_cell_after": 30,
+        "largest_cell_after_pct": 12.3
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Pricing:c30",
+        "to_text": "Pricing derived claim #30",
+        "domain": "Pricing",
+        "traffic": 223.0,
+        "largest_cell_after": 30,
+        "largest_cell_after_pct": 12.3
+      },
+      {
+        "from": "Infra:root1",
+        "from_text": "single-region is acceptable",
+        "to": "Infra:c19",
+        "to_text": "Infra derived claim #19",
+        "domain": "Infra",
+        "traffic": 348.0,
+        "largest_cell_after": 30,
+        "largest_cell_after_pct": 12.3
+      },
+      {
+        "from": "AI:gen13",
+        "from_text": "AI-generated synthesis #13",
+        "to": "AI:gen28",
+        "to_text": "AI-generated synthesis #28",
+        "domain": "Growth",
+        "traffic": 432.0,
+        "largest_cell_after": 29,
+        "largest_cell_after_pct": 11.9
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Infra:c11",
+        "to_text": "Infra derived claim #11",
+        "domain": "Infra",
+        "traffic": 176.7,
+        "largest_cell_after": 29,
+        "largest_cell_after_pct": 11.9
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Infra:c25",
+        "to_text": "Infra derived claim #25",
+        "domain": "Infra",
+        "traffic": 234.0,
+        "largest_cell_after": 29,
+        "largest_cell_after_pct": 11.9
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Infra:c30",
+        "to_text": "Infra derived claim #30",
+        "domain": "Infra",
+        "traffic": 296.0,
+        "largest_cell_after": 29,
+        "largest_cell_after_pct": 11.9
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c19",
+        "to_text": "Roadmap derived claim #19",
+        "domain": "Roadmap",
+        "traffic": 416.0,
+        "largest_cell_after": 22,
+        "largest_cell_after_pct": 9.1
+      },
+      {
+        "from": "Pricing:c0",
+        "from_text": "Pricing derived claim #0",
+        "to": "AI:gen18",
+        "to_text": "AI-generated synthesis #18",
+        "domain": "Infra",
+        "traffic": 242.0,
+        "largest_cell_after": 20,
+        "largest_cell_after_pct": 8.2
+      },
+      {
+        "from": "Growth:root0",
+        "from_text": "CAC payback is 11 months",
+        "to": "Infra:c42",
+        "to_text": "Infra derived claim #42",
+        "domain": "Infra",
+        "traffic": 123.0,
+        "largest_cell_after": 20,
+        "largest_cell_after_pct": 8.2
+      },
+      {
+        "from": "Growth:root0",
+        "from_text": "CAC payback is 11 months",
+        "to": "Growth:c9",
+        "to_text": "Growth derived claim #9",
+        "domain": "Growth",
+        "traffic": 182.0,
+        "largest_cell_after": 19,
+        "largest_cell_after_pct": 7.8
+      },
+      {
+        "from": "Pricing:c4",
+        "from_text": "Pricing derived claim #4",
+        "to": "Pricing:c41",
+        "to_text": "Pricing derived claim #41",
+        "domain": "Pricing",
+        "traffic": 116.0,
+        "largest_cell_after": 19,
+        "largest_cell_after_pct": 7.8
+      },
+      {
+        "from": "Pricing:c3",
+        "from_text": "Pricing derived claim #3",
+        "to": "Pricing:c33",
+        "to_text": "Pricing derived claim #33",
+        "domain": "Pricing",
+        "traffic": 180.0,
+        "largest_cell_after": 19,
+        "largest_cell_after_pct": 7.8
+      },
+      {
+        "from": "Growth:c4",
+        "from_text": "Growth derived claim #4",
+        "to": "AI:gen30",
+        "to_text": "AI-generated synthesis #30",
+        "domain": "Growth",
+        "traffic": 180.0,
+        "largest_cell_after": 18,
+        "largest_cell_after_pct": 7.4
+      },
+      {
+        "from": "Pricing:root0",
+        "from_text": "enterprise tier converts at 4%",
+        "to": "Pricing:c6",
+        "to_text": "Pricing derived claim #6",
+        "domain": "Pricing",
+        "traffic": 104.0,
+        "largest_cell_after": 18,
+        "largest_cell_after_pct": 7.4
+      },
+      {
+        "from": "Pricing:c47",
+        "from_text": "Pricing derived claim #47",
+        "to": "AI:gen2",
+        "to_text": "AI-generated synthesis #2",
+        "domain": "Roadmap",
+        "traffic": 130.0,
+        "largest_cell_after": 17,
+        "largest_cell_after_pct": 7.0
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "Infra:c1",
+        "to_text": "Infra derived claim #1",
+        "domain": "Infra",
+        "traffic": 87.0,
+        "largest_cell_after": 17,
+        "largest_cell_after_pct": 7.0
+      },
+      {
+        "from": "Infra:root2",
+        "from_text": "storage grows 8%/mo",
+        "to": "Infra:c33",
+        "to_text": "Infra derived claim #33",
+        "domain": "Infra",
+        "traffic": 144.0,
+        "largest_cell_after": 16,
+        "largest_cell_after_pct": 6.6
+      },
+      {
+        "from": "Roadmap:root0",
+        "from_text": "customers want automation, not analytics",
+        "to": "Roadmap:c5",
+        "to_text": "Roadmap derived claim #5",
+        "domain": "Roadmap",
+        "traffic": 78.0,
+        "largest_cell_after": 15,
+        "largest_cell_after_pct": 6.2
+      },
+      {
+        "from": "Pricing:c1",
+        "from_text": "Pricing derived claim #1",
+        "to": "Infra:c41",
+        "to_text": "Infra derived claim #41",
+        "domain": "Infra",
+        "traffic": 108.0,
+        "largest_cell_after": 14,
+        "largest_cell_after_pct": 5.8
+      },
+      {
+        "from": "Growth:c2",
+        "from_text": "Growth derived claim #2",
+        "to": "Growth:c3",
+        "to_text": "Growth derived claim #3",
+        "domain": "Growth",
+        "traffic": 90.0,
+        "largest_cell_after": 14,
+        "largest_cell_after_pct": 5.8
+      },
+      {
+        "from": "Roadmap:c10",
+        "from_text": "Roadmap derived claim #10",
+        "to": "AI:gen1",
+        "to_text": "AI-generated synthesis #1",
+        "domain": "Growth",
+        "traffic": 98.0,
+        "largest_cell_after": 13,
+        "largest_cell_after_pct": 5.3
+      }
+    ],
+    "trace": [
+      {
+        "step": 0,
+        "cut": null,
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 1,
+        "cut": "Roadmap:root0->Infra:c1",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 2,
+        "cut": "Pricing:root0->Pricing:c0",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 3,
+        "cut": "Pricing:root0->Pricing:c1",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 4,
+        "cut": "Growth:root0->Growth:c4",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 5,
+        "cut": "Infra:root2->AI:gen16",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 6,
+        "cut": "Pricing:c2->Pricing:c35",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 7,
+        "cut": "Growth:root0->Growth:c14",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 8,
+        "cut": "Growth:root0->Growth:c2",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 9,
+        "cut": "Pricing:c31->Growth:c17",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 10,
+        "cut": "Infra:root1->Infra:c5",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 11,
+        "cut": "Growth:c2->Growth:c5",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 12,
+        "cut": "Pricing:c46->AI:gen6",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 13,
+        "cut": "Pricing:c14->AI:gen32",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 14,
+        "cut": "AI:gen31->AI:gen33",
+        "largest_cell": 227,
+        "largest_cell_pct": 93.4
+      },
+      {
+        "step": 15,
+        "cut": "Pricing:c5->Pricing:c23",
+        "largest_cell": 118,
+        "largest_cell_pct": 48.6
+      },
+      {
+        "step": 16,
+        "cut": "Growth:c4->Roadmap:c6",
+        "largest_cell": 118,
+        "largest_cell_pct": 48.6
+      },
+      {
+        "step": 17,
+        "cut": "Growth:c4->Growth:c42",
+        "largest_cell": 118,
+        "largest_cell_pct": 48.6
+      },
+      {
+        "step": 18,
+        "cut": "Roadmap:c21->Roadmap:c32",
+        "largest_cell": 118,
+        "largest_cell_pct": 48.6
+      },
+      {
+        "step": 19,
+        "cut": "Infra:root0->Infra:c17",
+        "largest_cell": 118,
+        "largest_cell_pct": 48.6
+      },
+      {
+        "step": 20,
+        "cut": "Growth:c5->AI:gen21",
+        "largest_cell": 109,
+        "largest_cell_pct": 44.9
+      },
+      {
+        "step": 21,
+        "cut": "Pricing:root2->Pricing:c20",
+        "largest_cell": 100,
+        "largest_cell_pct": 41.2
+      },
+      {
+        "step": 22,
+        "cut": "Roadmap:c26->AI:gen8",
+        "largest_cell": 100,
+        "largest_cell_pct": 41.2
+      },
+      {
+        "step": 23,
+        "cut": "Pricing:root2->Roadmap:c1",
+        "largest_cell": 100,
+        "largest_cell_pct": 41.2
+      },
+      {
+        "step": 24,
+        "cut": "Growth:c46->AI:gen0",
+        "largest_cell": 99,
+        "largest_cell_pct": 40.7
+      },
+      {
+        "step": 25,
+        "cut": "Roadmap:root0->Infra:c26",
+        "largest_cell": 99,
+        "largest_cell_pct": 40.7
+      },
+      {
+        "step": 26,
+        "cut": "Roadmap:root0->Roadmap:c10",
+        "largest_cell": 99,
+        "largest_cell_pct": 40.7
+      },
+      {
+        "step": 27,
+        "cut": "Roadmap:root0->Roadmap:c6",
+        "largest_cell": 99,
+        "largest_cell_pct": 40.7
+      },
+      {
+        "step": 28,
+        "cut": "Infra:root1->AI:gen15",
+        "largest_cell": 99,
+        "largest_cell_pct": 40.7
+      },
+      {
+        "step": 29,
+        "cut": "AI:gen3->AI:gen32",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 30,
+        "cut": "Roadmap:root0->Roadmap:c21",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 31,
+        "cut": "Pricing:root0->Pricing:c37",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 32,
+        "cut": "Roadmap:root0->Growth:c24",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 33,
+        "cut": "Pricing:c5->AI:gen31",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 34,
+        "cut": "Infra:c30->AI:gen28",
+        "largest_cell": 85,
+        "largest_cell_pct": 35.0
+      },
+      {
+        "step": 35,
+        "cut": "Infra:root1->Growth:c6",
+        "largest_cell": 78,
+        "largest_cell_pct": 32.1
+      },
+      {
+        "step": 36,
+        "cut": "Infra:root2->Growth:c23",
+        "largest_cell": 78,
+        "largest_cell_pct": 32.1
+      },
+      {
+        "step": 37,
+        "cut": "Growth:root1->Growth:c0",
+        "largest_cell": 78,
+        "largest_cell_pct": 32.1
+      },
+      {
+        "step": 38,
+        "cut": "Growth:c0->AI:gen20",
+        "largest_cell": 78,
+        "largest_cell_pct": 32.1
+      },
+      {
+        "step": 39,
+        "cut": "Infra:c10->Infra:c16",
+        "largest_cell": 50,
+        "largest_cell_pct": 20.6
+      },
+      {
+        "step": 40,
+        "cut": "Pricing:root0->Pricing:c5",
+        "largest_cell": 50,
+        "largest_cell_pct": 20.6
+      },
+      {
+        "step": 41,
+        "cut": "Infra:root1->Infra:c23",
+        "largest_cell": 50,
+        "largest_cell_pct": 20.6
+      },
+      {
+        "step": 42,
+        "cut": "Infra:root1->Infra:c15",
+        "largest_cell": 50,
+        "largest_cell_pct": 20.6
+      },
+      {
+        "step": 43,
+        "cut": "Pricing:root0->AI:gen19",
+        "largest_cell": 45,
+        "largest_cell_pct": 18.5
+      },
+      {
+        "step": 44,
+        "cut": "Pricing:c1->Pricing:c45",
+        "largest_cell": 45,
+        "largest_cell_pct": 18.5
+      },
+      {
+        "step": 45,
+        "cut": "Pricing:root2->Pricing:c29",
+        "largest_cell": 35,
+        "largest_cell_pct": 14.4
+      },
+      {
+        "step": 46,
+        "cut": "Roadmap:root0->Roadmap:c14",
+        "largest_cell": 33,
+        "largest_cell_pct": 13.6
+      },
+      {
+        "step": 47,
+        "cut": "Pricing:c3->Growth:c34",
+        "largest_cell": 32,
+        "largest_cell_pct": 13.2
+      },
+      {
+        "step": 48,
+        "cut": "Infra:root2->Infra:c10",
+        "largest_cell": 32,
+        "largest_cell_pct": 13.2
+      },
+      {
+        "step": 49,
+        "cut": "Infra:root2->Pricing:c26",
+        "largest_cell": 32,
+        "largest_cell_pct": 13.2
+      },
+      {
+        "step": 50,
+        "cut": "Pricing:c17->AI:gen9",
+        "largest_cell": 30,
+        "largest_cell_pct": 12.3
+      },
+      {
+        "step": 51,
+        "cut": "Infra:root1->Pricing:c6",
+        "largest_cell": 30,
+        "largest_cell_pct": 12.3
+      },
+      {
+        "step": 52,
+        "cut": "Infra:root1->Pricing:c2",
+        "largest_cell": 30,
+        "largest_cell_pct": 12.3
+      },
+      {
+        "step": 53,
+        "cut": "Infra:root1->Pricing:c30",
+        "largest_cell": 30,
+        "largest_cell_pct": 12.3
+      },
+      {
+        "step": 54,
+        "cut": "Infra:root1->Infra:c19",
+        "largest_cell": 30,
+        "largest_cell_pct": 12.3
+      },
+      {
+        "step": 55,
+        "cut": "AI:gen13->AI:gen28",
+        "largest_cell": 29,
+        "largest_cell_pct": 11.9
+      },
+      {
+        "step": 56,
+        "cut": "Roadmap:root0->Infra:c11",
+        "largest_cell": 29,
+        "largest_cell_pct": 11.9
+      },
+      {
+        "step": 57,
+        "cut": "Roadmap:root0->Infra:c25",
+        "largest_cell": 29,
+        "largest_cell_pct": 11.9
+      },
+      {
+        "step": 58,
+        "cut": "Roadmap:root0->Infra:c30",
+        "largest_cell": 29,
+        "largest_cell_pct": 11.9
+      },
+      {
+        "step": 59,
+        "cut": "Roadmap:root0->Roadmap:c19",
+        "largest_cell": 22,
+        "largest_cell_pct": 9.1
+      },
+      {
+        "step": 60,
+        "cut": "Pricing:c0->AI:gen18",
+        "largest_cell": 20,
+        "largest_cell_pct": 8.2
+      },
+      {
+        "step": 61,
+        "cut": "Growth:root0->Infra:c42",
+        "largest_cell": 20,
+        "largest_cell_pct": 8.2
+      },
+      {
+        "step": 62,
+        "cut": "Growth:root0->Growth:c9",
+        "largest_cell": 19,
+        "largest_cell_pct": 7.8
+      },
+      {
+        "step": 63,
+        "cut": "Pricing:c4->Pricing:c41",
+        "largest_cell": 19,
+        "largest_cell_pct": 7.8
+      },
+      {
+        "step": 64,
+        "cut": "Pricing:c3->Pricing:c33",
+        "largest_cell": 19,
+        "largest_cell_pct": 7.8
+      },
+      {
+        "step": 65,
+        "cut": "Growth:c4->AI:gen30",
+        "largest_cell": 18,
+        "largest_cell_pct": 7.4
+      },
+      {
+        "step": 66,
+        "cut": "Pricing:root0->Pricing:c6",
+        "largest_cell": 18,
+        "largest_cell_pct": 7.4
+      },
+      {
+        "step": 67,
+        "cut": "Pricing:c47->AI:gen2",
+        "largest_cell": 17,
+        "largest_cell_pct": 7.0
+      },
+      {
+        "step": 68,
+        "cut": "Infra:root2->Infra:c1",
+        "largest_cell": 17,
+        "largest_cell_pct": 7.0
+      },
+      {
+        "step": 69,
+        "cut": "Infra:root2->Infra:c33",
+        "largest_cell": 16,
+        "largest_cell_pct": 6.6
+      },
+      {
+        "step": 70,
+        "cut": "Roadmap:root0->Roadmap:c5",
+        "largest_cell": 15,
+        "largest_cell_pct": 6.2
+      },
+      {
+        "step": 71,
+        "cut": "Pricing:c1->Infra:c41",
+        "largest_cell": 14,
+        "largest_cell_pct": 5.8
+      },
+      {
+        "step": 72,
+        "cut": "Growth:c2->Growth:c3",
+        "largest_cell": 14,
+        "largest_cell_pct": 5.8
+      },
+      {
+        "step": 73,
+        "cut": "Roadmap:c10->AI:gen1",
+        "largest_cell": 13,
+        "largest_cell_pct": 5.3
+      }
+    ],
+    "links_severed_total": 73,
+    "links_total": 282
+  }
+}
