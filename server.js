@@ -116,6 +116,17 @@ const REGRESSION_ENDPOINTS = [
   // Layer 10: how the register of walls got to be the way it is. The engine's memory of its
   // own failures is addressed through here.
   "/api/limits/events",
+  // Layer 11: what the engine actually did, as opposed to what its source says it does.
+  "/api/self/runtime",
+  "/api/introspect/preview",
+  // Layer 12: what reading itself costs this round, and the budget that bounds it.
+  "/api/forge/bundle",
+  // Layer 13: the contract the round is judged against, held outside the round's reach.
+  "/api/judge",
+  // Layer 14: whether the process that is thinking is the code that exists.
+  "/api/restart/status",
+  // Layer 15: how many candidates a round is allowed to breed before it picks one.
+  "/api/forge/population",
 ];
 // Layer 6.6: both ledgers live outside data/ on purpose. data/*.json is compared
 // byte-for-byte after every forge round, so an ordinary HTTP request arriving while the
@@ -219,6 +230,8 @@ const DISTILL_MODEL = process.env.DISTILL_MODEL || HARVEST_MODEL;
 const DISTILL_TIMEOUT_MS = 6 * 60 * 1000;
 // Set by the Self-Forge smoke test: boot, answer HTTP, but never start the daemon or call AI.
 const SELFTEST = process.env.DOT_SELFTEST === "1";
+// Layer 14: when *this* process started, as opposed to when the code on disk was written.
+const BOOT_AT = new Date().toISOString();
 
 function loadJson(file, fallback) {
   try {
@@ -1935,9 +1948,11 @@ function readGuarded() {
     }
   } catch {}
   // The auditor is guarded like memory: a round that edits its own invigilator is void.
+  // Layer 13: and so is the contract it judges against — a frozen exam list that the
+  // examinee could rewrite would be no better than the list in server.js it replaced.
   try {
     for (const f of fs.readdirSync(VERIFIER_DIR)) {
-      if (f.endsWith(".js")) g["verifier/" + f] = fs.readFileSync(path.join(VERIFIER_DIR, f), "utf8");
+      if (f.endsWith(".js") || f.endsWith(".json")) g["verifier/" + f] = fs.readFileSync(path.join(VERIFIER_DIR, f), "utf8");
     }
   } catch {}
   // Layer 9: and so is the ignition. The forge may rewrite every line that decides *how* it
@@ -2026,9 +2041,10 @@ function restoreGuarded(guarded) {
   return violated;
 }
 
-function syntaxCheck() {
+// Layer 15: takes a root so a candidate tree can be checked without being installed first.
+function syntaxCheck(root = ROOT) {
   return new Promise((resolve) => {
-    const p = spawn(process.execPath, ["--check", path.join(ROOT, "server.js")], { windowsHide: true });
+    const p = spawn(process.execPath, ["--check", path.join(root, "server.js")], { windowsHide: true });
     let err = "";
     p.stderr.on("data", (d) => (err += d));
     p.on("error", (e) => resolve({ ok: false, detail: e.message }));
@@ -2327,9 +2343,57 @@ function loadDeprecations() {
 function retiredEndpoints() {
   return new Set(loadDeprecations().filter((d) => d && d.active !== false).map((d) => d.endpoint));
 }
+/* ================= Layer 13: THE EXTERNAL JUDGE =================
+ * Every gate this engine has ever been judged by lived in server.js — the same file the
+ * round being judged is allowed to rewrite. The thing stopping a round from editing its own
+ * invigilator was rule 10 of a prompt: a request, checked by the party being asked.
+ *
+ * The sharpest version of the hole: a round breaks an existing endpoint, deletes that line
+ * from REGRESSION_ENDPOINTS in the same commit, and passes the regression sweep cleanly.
+ * Nothing in the machine noticed, because the machine *was* the line it deleted.
+ *
+ * verifier/ is already outside walkSelf() and restored byte-for-byte by readGuarded(), so it
+ * is the one place in this tree the forge cannot reach. The contract moves there:
+ *   · the sweep list becomes a floor that source edits cannot lower (only Layer 6.6's
+ *     retirement path, which needs evidence from the usage ledger, may remove one)
+ *   · the accumulated proof suite is re-run every round by verifier/audit.js — an examiner
+ *     with no shared code with the thing it examines
+ *   · and the proof file is written by a session that never sees the diff (blindProofPrompt)
+ */
+const CONTRACT_FILE = path.join(VERIFIER_DIR, "contract.json");
+function loadContract() {
+  const c = loadJson(CONTRACT_FILE, null);
+  if (!c || typeof c !== "object") {
+    // No contract on disk is not "no rules" — it is a missing invigilator, and the honest
+    // reading of that is the strictest one available from the code itself.
+    return {
+      missing: true,
+      regression_endpoints: REGRESSION_ENDPOINTS.slice(),
+      audit: { required: true, max_proofs: 14, timeout_ms: 900000, fail_closed: true },
+      blind_proof: { enabled: false },
+    };
+  }
+  return {
+    missing: false,
+    regression_endpoints: Array.isArray(c.regression_endpoints) ? c.regression_endpoints : [],
+    required_gates: c.required_gates || {},
+    audit: { required: true, max_proofs: 14, timeout_ms: 900000, fail_closed: true, ...(c.audit || {}) },
+    blind_proof: { enabled: false, sees_diff: false, ...(c.blind_proof || {}) },
+    frozen_at: c.frozen_at || null,
+  };
+}
+/* The floor: what the sweep must cover no matter what the source now says. Retirement still
+ * works — it is the one exit, and it costs evidence — but deleting a line no longer does. */
+function contractFloor() {
+  const retired = retiredEndpoints();
+  return loadContract().regression_endpoints.filter((ep) => !retired.has(ep));
+}
 function effectiveRegressionEndpoints() {
   const retired = retiredEndpoints();
-  return REGRESSION_ENDPOINTS.filter((ep) => !retired.has(ep));
+  const fromCode = REGRESSION_ENDPOINTS.filter((ep) => !retired.has(ep));
+  // Union, not the source's list: a round may add to the exam, never quietly subtract.
+  const all = new Set([...fromCode, ...contractFloor()]);
+  return [...all];
 }
 function endpointLedger() {
   const u = loadUsage();
@@ -2459,8 +2523,14 @@ function sizeMetrics(body) {
     code_files: codeFiles,
     code_lines: codeLines,
     code_chars: codeChars,
-    // The self-forge prompt is the engine's real context ceiling — measure it directly.
+    // How much source exists at all, if every byte were poured into a prompt. Kept under
+    // this name because the consolidation gate compares it across rounds as a size proxy.
     prompt_chars: sourceBundle(promptBundle(body)).length,
+    /* Layer 12: and what a round *actually* has to read. Before this layer the two were the
+     * same number, which is precisely why nobody noticed the first one growing for ever.
+     * Measured with no wall in focus, so it is comparable round to round. */
+    forge_prompt_chars: forgeBundle(promptBundle(body)).length,
+    forge_prompt_cap: FORGE_BUNDLE_CHARS,
     endpoints: effectiveRegressionEndpoints().length,
     retired_endpoints: retiredEndpoints().size,
   };
@@ -3083,6 +3153,9 @@ const GATE_LABEL = {
   preservation: "พฤติกรรมเปลี่ยนไป — ชุดทดสอบไม่ได้ให้ผลเหมือนกันทั้งก่อนและหลัง",
   shrink: "ไม่ได้เล็กลงจริงตามตัวเลข",
   regression: "ความสามารถเดิมพัง",
+  // Layer 13: the two gates the round cannot write, move or soften from inside server.js.
+  contract: "ลบเส้นทางออกจากรายการกวาดเอง (แก้ข้อสอบของตัวเอง)",
+  audit: "ผู้ตรวจอิสระไม่ผ่าน — ไฟล์พิสูจน์สะสมบางข้อเน่าแล้ว",
 };
 
 // Which gate actually stopped this round, with the detail the gate printed at the time.
@@ -3871,14 +3944,131 @@ function symbolIndex(body) {
     .join("\n\n");
 }
 
-function forgeBundle(body) {
+/* ================= Layer 12: THE BOUNDED SELF-READ =================
+ * Layer 08 gave the *connect* prompt a ceiling. The prompt the engine uses to read *itself*
+ * never had one: every accepted round made the source longer, so every next round paid more
+ * to think — the one cost curve that grows with success. The symbol map already stopped the
+ * bleeding, but a map is not the same as reading: the model has to spend turns re-Reading the
+ * very function the wall names, in a round that is capped at three turns.
+ *
+ * So the same medicine Layer 08 gave the repository, pointed at the engine's own source:
+ *   · the part of the tree the wall actually names is rendered in FULL, function by function
+ *   · everything else collapses to the map, and past the budget the map itself collapses to
+ *     one line per file — nothing ever disappears, it just stops costing a paragraph
+ *   · and the whole thing is measured, so "the prompt got smaller" is a number, not a feeling
+ *
+ * The focus is derived from the wall's own text (evidence · description · break_idea), which
+ * is exactly where the engine already writes down which functions the wall is made of.
+ */
+const FORGE_FOCUS_CHARS = Math.max(2000, Number(process.env.FORGE_FOCUS_CHARS || 26000));
+const FORGE_FOCUS_LINES = Math.max(20, Number(process.env.FORGE_FOCUS_LINES || 170));
+// Hard ceiling for the whole source section. Past this the index degrades to one line per
+// file rather than the bundle growing without end.
+const FORGE_BUNDLE_CHARS = Math.max(6000, Number(process.env.FORGE_BUNDLE_CHARS || 46000));
+
+// The identifiers a wall names. These are what the round is going to have to read anyway.
+function focusTargets(limit) {
+  const text = [limit && limit.evidence, limit && limit.description, limit && limit.break_idea, limit && limit.title]
+    .filter(Boolean)
+    .join(" ");
+  const symbols = new Set();
+  const files = new Set();
+  for (const m of text.matchAll(/([A-Za-z_$][A-Za-z0-9_$]*)\s*\(\)/g)) symbols.add(m[1]);
+  for (const m of text.matchAll(/\b([A-Z][A-Z0-9_]{3,})\b/g)) symbols.add(m[1]);
+  for (const m of text.matchAll(/\b([A-Za-z0-9_./-]+\.(?:js|html|json|md))\b/g)) files.add(m[1].replace(/^\.\//, ""));
+  for (const m of text.matchAll(/(\/api\/[A-Za-z0-9/_-]+)/g)) symbols.add("route " + m[1]);
+  return { symbols: [...symbols], files: [...files] };
+}
+
+/* Where each top-level symbol starts and ends. The end is the line before the next top-level
+ * symbol, so a "range" is a whole function rather than an arbitrary window — a half function
+ * in a prompt is worse than a map entry, because it reads as if it were complete. */
+function symbolRanges(content) {
+  const lines = content.split("\n");
+  const marks = [];
+  lines.forEach((line, i) => {
+    const m = SYMBOL_RE.exec(line);
+    const name = m && (m[1] || m[2] || (m[3] ? "route " + m[3] : null));
+    if (name) marks.push({ name, start: i + 1 });
+  });
+  return marks.map((mk, i) => ({
+    name: mk.name,
+    start: mk.start,
+    end: Math.min(i + 1 < marks.length ? marks[i + 1].start - 1 : lines.length, mk.start + FORGE_FOCUS_LINES - 1),
+  }));
+}
+
+/* The source section of a forge prompt: focused excerpts first, then the map, then — only if
+ * the budget is still exceeded — the map itself compressed to one line per file. Returns the
+ * text plus the numbers behind it, so the cost of reading itself is reportable. */
+function focusedBundle(body, limit = null, { focusChars = FORGE_FOCUS_CHARS, totalChars = FORGE_BUNDLE_CHARS } = {}) {
+  const want = focusTargets(limit || {});
+  const excerpts = [];
+  let focusUsed = 0;
+  if (want.symbols.length || want.files.length) {
+    for (const [rel, content] of Object.entries(body)) {
+      const fileWanted = want.files.some((f) => rel === f || rel.endsWith("/" + f));
+      const ranges = symbolRanges(content).filter((r) => want.symbols.includes(r.name));
+      // A file named without any symbol still gets its head, so "public/index.html" alone
+      // does not silently resolve to nothing.
+      const picks = ranges.length ? ranges : fileWanted ? [{ name: "(ต้นไฟล์)", start: 1, end: Math.min(FORGE_FOCUS_LINES, content.split("\n").length) }] : [];
+      const lines = content.split("\n");
+      for (const r of picks) {
+        if (focusUsed >= focusChars) break;
+        const text = lines.slice(r.start - 1, r.end).join("\n");
+        const head = `--- ${rel}:${r.start}-${r.end} · ${r.name} ---\n`;
+        if (focusUsed + head.length + text.length > focusChars) {
+          const room = Math.max(0, focusChars - focusUsed - head.length);
+          if (room < 200) break;
+          excerpts.push(head + text.slice(0, room) + "\n… (ตัดตามงบ — ใช้ Read อ่านต่อได้)");
+          focusUsed = focusChars;
+          break;
+        }
+        excerpts.push(head + text);
+        focusUsed += head.length + text.length;
+      }
+    }
+  }
+
+  const index = symbolIndex(body);
+  const focusText = excerpts.join("\n\n");
+  let indexText = index;
+  let degraded = false;
+  if (focusText.length + index.length > totalChars) {
+    // The map's own ceiling: names and sizes survive, the symbol lists do not. Nothing
+    // vanishes — a file that is only a line here is still a file the model can Read.
+    indexText = Object.entries(body)
+      .map(([rel, c]) => `${rel} (${c.split("\n").length} บรรทัด)`)
+      .join(" · ");
+    degraded = true;
+  }
+  const text =
+    `นี่คือซอร์สโค้ดของตัวคุณเอง ส่งมาแบบมีงบ (Layer 12) — ไม่ใช่ทั้งหมด และไม่ใช่แค่แผนที่\n` +
+    (excerpts.length
+      ? `**ส่วนที่เกี่ยวกับกำแพงรอบนี้ถูกส่งมาเต็ม ๆ ข้างล่างนี้แล้ว** (${excerpts.length} ช่วง) — อ่านตรงนี้ก่อน\n`
+      : `รอบนี้ไม่มีช่วงโค้ดที่ตรงกับกำแพงโดยตรง — ใช้แผนที่แล้ว Read เอา\n`) +
+    `ที่เหลือเป็น${degraded ? "รายชื่อไฟล์" : 'แผนที่ `ชื่อสัญลักษณ์:เลขบรรทัด`'} · คุณมี Read / Grep / Glob: **ห้ามแก้ส่วนที่ยังไม่ได้อ่าน**\n\n` +
+    (excerpts.length ? `===== ช่วงโค้ดที่เกี่ยวกับกำแพงนี้โดยตรง =====\n${focusText}\n\n` : "") +
+    `===== ${degraded ? "รายชื่อไฟล์ทั้งหมด (แผนที่ถูกย่อเพราะชนงบ)" : "แผนที่ซอร์สทั้งหมด"} =====\n${indexText}`;
+
+  return {
+    text,
+    metrics: {
+      focus_ranges: excerpts.length,
+      focus_chars: focusUsed,
+      index_chars: indexText.length,
+      total_chars: text.length,
+      budget: totalChars,
+      degraded,
+      within_budget: text.length <= totalChars + 1200, // + the framing paragraph
+      targets: want,
+    },
+  };
+}
+
+function forgeBundle(body, limit = null) {
   if (FORGE_BUNDLE === "full") return sourceBundle(body);
-  return (
-    `นี่คือ "แผนที่" ซอร์สโค้ดของตัวคุณเอง ไม่ใช่ซอร์สเต็ม — รูปแบบ \`ชื่อสัญลักษณ์:เลขบรรทัด\`\n` +
-    `คุณมี Read / Grep / Glob อยู่ในมือ: **เปิดอ่านเฉพาะส่วนที่จะแก้จริง และต้องอ่านก่อนแก้ทุกครั้ง**\n` +
-    `ห้ามแก้ไฟล์ส่วนที่ยังไม่ได้อ่าน — แผนที่บอกได้แค่ว่าอะไรอยู่ที่ไหน ไม่ได้บอกว่ามันทำงานอย่างไร\n\n` +
-    symbolIndex(body)
-  );
+  return focusedBundle(body, limit).text;
 }
 
 // Past proof files are real source, but the bundle only needs the newest one as a worked example.
@@ -3937,6 +4127,140 @@ ${
 ในแต่ละข้อที่คุณเสนอ ให้ break_idea อ้างอิงหลักการจากจุดข้างบนได้ถ้ามันเข้ากันจริง`;
 }
 
+/* ================= Layer 11: THE BEHAVIOURAL MIRROR =================
+ * buildIntrospectPrompt() received the source, the dot titles and the innovation names, and
+ * stopped. So the mirror only ever reflected "how I am supposed to work according to what is
+ * written" — never "how I actually worked last night when nobody was watching". Every wall it
+ * could name was therefore a wall legible from the source alone.
+ *
+ * The engine was holding the other half of the answer the whole time and reading none of it:
+ *   state.log            every daemon cycle, every caught crash, every round it announced
+ *   evolution.json       each round's verdict, which gate it failed on, how many repair turns
+ *   endpoint-usage.json  which of its own capabilities anyone has ever called
+ *
+ * runtimeDossier() is that record, and it is a plain function over files so the block can be
+ * inspected (GET /api/self/runtime) and proved without spending a 12-minute introspection.
+ */
+const RUNTIME_WINDOW_DAYS = Math.max(1, Number(process.env.RUNTIME_WINDOW_DAYS || 7));
+// Log lines the engine writes about itself, bucketed by what they say about its health.
+const RUNTIME_LOG_KINDS = [
+  { key: "crash", re: /ข้อผิดพลาดที่ไม่ถูกดัก/, label: "ข้อผิดพลาดที่ไม่ถูกดัก (แต่รอดมาได้)" },
+  { key: "forge_died", re: /Self-Forge ตายกลางรอบ|ถูกสั่งหยุดกลางคัน/, label: "รอบหลอมตัวเองที่ตายหรือถูกหยุดกลางคัน" },
+  { key: "failure", re: /ไม่สำเร็จ|ล้มเหลว|ไม่ผ่าน/, label: "งานที่ประกาศว่าไม่สำเร็จ" },
+  { key: "broke_wall", re: /^🔥 ทำลายขอบเขต/, label: "กำแพงที่ทำลายได้" },
+  { key: "eureka", re: /^Eureka!/, label: "รอบเชื่อมจุดที่เกิดผล" },
+];
+
+function runtimeDossier({ days = RUNTIME_WINDOW_DAYS, now = Date.now() } = {}) {
+  const since = now - days * 86400000;
+  const state = loadState();
+  const ledger = loadJson(EVO_FILE, []);
+  const usage = loadUsage();
+  const inWindow = (iso) => iso && new Date(iso).getTime() >= since;
+
+  const log = (state.log || []).filter((l) => inWindow(l.at));
+  const logKinds = RUNTIME_LOG_KINDS.map((k) => {
+    const hits = log.filter((l) => k.re.test(String(l.msg || "")));
+    return { key: k.key, label: k.label, count: hits.length, latest: hits.length ? hits[hits.length - 1].msg.slice(0, 300) : null };
+  });
+
+  const rounds = ledger.filter((e) => inWindow(e.at));
+  // Which gate actually kills rounds here — the engine's own failure distribution, which it
+  // has never once been shown. A wall that only appears in this histogram is invisible in the source.
+  const gateHistogram = {};
+  for (const e of rounds) {
+    for (const g of failedGates(e)) gateHistogram[g.label] = (gateHistogram[g.label] || 0) + 1;
+  }
+  const turnCounts = rounds.map((e) => Number(e.turn_count) || 0).filter((n) => n > 0);
+  const declared = new Set();
+  for (const e of ledger) for (const ep of (e.adoption && e.adoption.endpoints) || []) declared.add(ep);
+  const hitsOf = (ep) => ((usage.endpoints || {})[ep] || {}).hits || 0;
+
+  const allRoutes = Object.entries(usage.endpoints || {}).map(([ep, v]) => ({ endpoint: ep, hits: v.hits || 0, last_hit: v.last_hit || null }));
+  const totalRequests = allRoutes.reduce((n, r) => n + r.hits, 0);
+  // Capabilities the engine built and declared, that nothing has ever called. The single
+  // most useful sentence a mirror can say to this engine, and it had no way to say it.
+  const neverCalled = [...declared].filter((ep) => hitsOf(ep) === 0).sort();
+
+  return {
+    window_days: days,
+    since: new Date(since).toISOString(),
+    log: {
+      lines_in_window: log.length,
+      kinds: logKinds,
+      // The tail verbatim: a summary can hide the one line that names the wall.
+      tail: log.slice(-12).map((l) => ({ at: l.at, msg: String(l.msg || "").slice(0, 220) })),
+    },
+    rounds: {
+      total: rounds.length,
+      accepted: rounds.filter((e) => e.verdict === "accepted").length,
+      rejected: rounds.filter((e) => e.verdict !== "accepted").length,
+      stopped_mid_round: rounds.filter((e) => e.stopped).length,
+      gate_failures: Object.entries(gateHistogram)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => ({ gate: label, count })),
+      repair_turns_avg: turnCounts.length ? Math.round((turnCounts.reduce((a, b) => a + b, 0) / turnCounts.length) * 10) / 10 : null,
+      repair_turns_max: turnCounts.length ? Math.max(...turnCounts) : null,
+      hit_turn_ceiling: rounds.filter((e) => Number(e.turn_count) >= Number(e.max_turns || FORGE_MAX_TURNS)).length,
+    },
+    usage: {
+      tracking_since: usage.started_at,
+      total_requests: totalRequests,
+      routes_tracked: allRoutes.length,
+      never_called_capabilities: neverCalled,
+      busiest: allRoutes.sort((a, b) => b.hits - a.hits).slice(0, 8),
+      // Routes the engine declares in its own regression sweep that nothing has ever touched.
+      declared_but_silent: effectiveRegressionEndpoints().filter((ep) => hitsOf(ep) === 0),
+    },
+    ignition: (() => {
+      const ap = autopilot();
+      return { master: ap.master, connect: ap.can_connect, scout: ap.can_scout, distill: ap.can_distill, evolve: ap.can_evolve };
+    })(),
+    clocks: {
+      last_auto_run: state.last_auto_run,
+      last_evolution: state.last_evolution,
+      last_consolidation: state.last_consolidation,
+      last_distill: state.last_distill,
+      restart_required: Boolean(state.restart_required),
+    },
+  };
+}
+
+// The block itself. Kept separate from the dossier so its size can be measured (Layer 12)
+// and its content proved, without the prompt having to be built.
+function buildRuntimeBlock(d) {
+  const kind = (k) => (d.log.kinds.find((x) => x.key === k) || { count: 0, latest: null });
+  const crashes = kind("crash");
+  const died = kind("forge_died");
+  return `===== 🩺 บันทึกการเดินเครื่องจริง ${d.window_days} วันล่าสุด (Layer 11) =====
+นี่ไม่ใช่สิ่งที่โค้ดบอกว่าคุณควรทำ — นี่คือสิ่งที่คุณทำจริงตอนไม่มีใครดู
+
+รอบวิวัฒนาการในหน้าต่างนี้: ทั้งหมด ${d.rounds.total} · ผ่าน ${d.rounds.accepted} · ตก ${d.rounds.rejected} · ตายกลางรอบ ${d.rounds.stopped_mid_round}
+เทิร์นซ่อมเฉลี่ย ${d.rounds.repair_turns_avg === null ? "—" : d.rounds.repair_turns_avg} (สูงสุด ${d.rounds.repair_turns_max === null ? "—" : d.rounds.repair_turns_max}) · ชนเพดานเทิร์น ${d.rounds.hit_turn_ceiling} รอบ
+${
+    d.rounds.gate_failures.length
+      ? "ด่านที่ฆ่ารอบมากที่สุด: " + d.rounds.gate_failures.map((g) => `${g.gate} ×${g.count}`).join(" · ")
+      : "ยังไม่มีรอบไหนตกด่านในหน้าต่างนี้"
+  }
+
+บันทึกของ daemon: ${d.log.lines_in_window} บรรทัด
+${d.log.kinds.map((k) => `  · ${k.label}: ${k.count}${k.latest ? ` — ล่าสุด "${k.latest}"` : ""}`).join("\n")}
+${crashes.count ? `⚠ มีข้อผิดพลาดที่ไม่ถูกดัก ${crashes.count} ครั้งในหน้าต่างนี้ — โค้ดที่ทำให้เกิดยังอยู่ตรงนั้น` : ""}
+${died.count ? `⚠ รอบหลอมตัวเองตายหรือถูกหยุดกลางคัน ${died.count} ครั้ง` : ""}
+
+การถูกเรียกใช้จริง (นับตั้งแต่ ${d.usage.tracking_since}): ${d.usage.total_requests} คำขอ · ${d.usage.routes_tracked} เส้นทาง
+เส้นทางที่คุณสร้างแล้วประกาศไว้เอง แต่ยังไม่เคยมีใครเรียกเลย: ${
+    d.usage.never_called_capabilities.length ? d.usage.never_called_capabilities.join(", ") : "(ไม่มี)"
+  }
+เส้นทางที่อยู่ในด่าน regression แต่เงียบสนิท: ${d.usage.declared_but_silent.length ? d.usage.declared_but_silent.slice(0, 12).join(", ") : "(ไม่มี)"}
+
+สวิตช์กุญแจตอนนี้: ${d.ignition.master ? "เดินเครื่องอยู่" : "หยุดอยู่"} · เชื่อมจุดเอง ${d.ignition.connect ? "เปิด" : "ปิด"} · Scout ${d.ignition.scout ? "เปิด" : "ปิด"} · Distiller ${d.ignition.distill ? "เปิด" : "ปิด"} · Self-Forge ${d.ignition.evolve ? "เปิด" : "ปิด"}
+${d.clocks.restart_required ? "⚠ มีโค้ดใหม่บนดิสก์ที่โปรเซสนี้ยังไม่ได้โหลด" : ""}
+
+สิบสองบรรทัดล่าสุดจากบันทึกจริง:
+${d.log.tail.map((l) => `  [${l.at}] ${l.msg}`).join("\n") || "  (ว่าง)"}`;
+}
+
 function buildIntrospectPrompt(body, dots, connections, limits) {
   const standing = limits.filter(isTargetable);
   const broken = limits.filter((l) => l.status === "broken");
@@ -3961,6 +4285,8 @@ ${forgeBundle(promptBundle(body))}
 ===== ความรู้ที่ระบบสะสมไว้ (ใช้เป็นวัตถุดิบเชื่อมจุดกับตัวเองได้) =====
 ${introspectKnowledgeBlock(dots, connections)}
 
+${buildRuntimeBlock(runtimeDossier())}
+
 ===== ขอบเขตที่ถูกทำลายไปแล้ว (ห้ามเสนอซ้ำ) =====
 ${broken.map((l) => `- ${l.title}`).join("\n") || "(ยังไม่มี)"}
 
@@ -3982,7 +4308,7 @@ ${dormant.map((l) => `- [${l.id}] ${l.title}`).join("\n")}
 ตอบเป็น JSON ล้วนเท่านั้น (ห้ามมี markdown หรือข้อความอื่นนอก JSON) ข้อความทุก field เป็นภาษาไทย
 ให้มี 5-8 ข้อ เรียงจาก unlock_score มากไปน้อย:
 {
-  "self_assessment": "<ระบบนี้ตอนนี้เก่งอะไรจริง ๆ และติดเพดานตรงไหน — 2-3 ประโยค ตรงไปตรงมา ไม่ต้องถนอมน้ำใจ>",
+  "self_assessment": "<ระบบนี้ตอนนี้เก่งอะไรจริง ๆ และติดเพดานตรงไหน — 2-3 ประโยค ตรงไปตรงมา ไม่ต้องถนอมน้ำใจ · ต้องอ้างถึงบันทึกการเดินเครื่องจริงอย่างน้อยหนึ่งข้อ ไม่ใช่อ่านจากโค้ดล้วน>",
   "limits": [
     {
       "id": "<ใส่ id เดิมถ้าเป็นข้อที่มีอยู่แล้ว มิฉะนั้นเว้นว่าง>",
@@ -3990,6 +4316,7 @@ ${dormant.map((l) => `- [${l.id}] ${l.title}`).join("\n")}
       "category": "architecture | autonomy | capability | knowledge | interface | physics",
       "description": "<กำแพงนี้คืออะไร และมันขังอะไรไว้ — 1-3 ประโยค>",
       "evidence": "<ชี้จุดในโค้ดจริงที่กำแพงนี้ฝังอยู่ เช่น server.js: ฟังก์ชัน/บรรทัดไหน>",
+      "runtime_evidence": "<Layer 11 · บังคับ: อ้างอิงจาก **บันทึกการเดินเครื่องจริง** ข้างบนอย่างน้อยหนึ่งบรรทัด — ตัวเลขจากด่านที่ตก, เส้นทางที่ไม่มีใครเรียก, ข้อผิดพลาดที่ถูกดัก, หรือบรรทัดในบันทึก daemon · ถ้ากำแพงนี้อ่านออกจากโค้ดอย่างเดียวโดยไม่มีร่องรอยในบันทึกจริงเลย ให้เขียนว่า \"ไม่มีร่องรอยในบันทึก 7 วัน\" ตรง ๆ ห้ามแต่งตัวเลขขึ้นมาเอง>",
       "why_it_stands": "<ทำไมมันยังอยู่ ทั้งที่แก้ได้ — 1 ประโยค>",
       "break_idea": "<จะทำลายมันด้วยวิธีไหนอย่างเป็นรูปธรรมในโค้ดนี้ — 1-3 ประโยค>",
       "unlock_score": <1-10 ทำลายแล้วระบบเก่งขึ้นแค่ไหน>,
@@ -4071,7 +4398,7 @@ ${block}
 ${adoptionBlock}
 
 ===== ซอร์สโค้ดปัจจุบันของคุณ =====
-${forgeBundle(promptBundle(body))}
+${forgeBundle(promptBundle(body), limit)}
 
 ===== วิธีทำงาน =====
 ใช้เครื่องมือ Read / Edit / Write / Glob / Grep แก้ไฟล์จริงในโฟลเดอร์นี้ให้เสร็จสมบูรณ์
@@ -4264,6 +4591,8 @@ function mergeLimits(current, incoming, opts = {}) {
       description: String(raw.description || "").slice(0, 1200),
       evidence: String(raw.evidence || "").slice(0, 600),
       why_it_stands: String(raw.why_it_stands || "").slice(0, 600),
+      // Layer 11: the one field that cannot be answered by reading the source.
+      runtime_evidence: String(raw.runtime_evidence || "").slice(0, 600),
       break_idea: String(raw.break_idea || "").slice(0, 1200),
       unlock_score: Number(raw.unlock_score) || 5,
       risk: Number(raw.risk) || 5,
@@ -4487,6 +4816,27 @@ async function runForgeGates({ evoId, before, guarded, consolidating, report }) 
       ` — อีก ${ADOPTION_DAYS} วันบันทึกการใช้งานจะเป็นผู้ตัดสินว่ามีใครเรียกจริงไหม`;
   }
 
+  /* Layer 13: the exam list is a floor now. A round that removed an endpoint from
+   * REGRESSION_ENDPOINTS without going through the retirement path — the one exit, which
+   * costs evidence from the usage ledger — is caught here rather than passing a sweep it
+   * shortened itself. Checked before syntax so the reason is never "your code was invalid". */
+  const contract = loadContract();
+  const floor = contractFloor();
+  const declaredNow = new Set(REGRESSION_ENDPOINTS);
+  const dropped = floor.filter((ep) => !declaredNow.has(ep));
+  checks.contract = dropped.length === 0;
+  checks.contract_detail = dropped.length
+    ? `เส้นทางที่หายไปจากรายการกวาด: ${dropped.join(", ")}`
+    : `ครบตามสัญญาที่แช่แข็งไว้ ${floor.length} เส้น (verifier/contract.json${contract.frozen_at ? " · " + contract.frozen_at : ""})`;
+  if (dropped.length) {
+    return fail(
+      "contract",
+      "ลบเส้นทางออกจากรายการกวาดเอง — ผู้เข้าสอบแก้ข้อสอบไม่ได้",
+      `verifier/contract.json แช่แข็งเส้นทางเหล่านี้ไว้และรอบนี้ทำให้หายไปจาก REGRESSION_ENDPOINTS: ${dropped.join(", ")}\n` +
+        `ถ้าเส้นทางนั้นตายจริง ให้ใช้เส้นทางปลดระวางของ Layer 6.6 (retire_endpoints) ซึ่งต้องมีหลักฐานจากบันทึกการใช้งานว่าไม่มีใครเรียกเลย`
+    );
+  }
+
   const syn = await syntaxCheck();
   checks.syntax = syn.ok;
   checks.syntax_detail = syn.detail;
@@ -4531,7 +4881,419 @@ async function runForgeGates({ evoId, before, guarded, consolidating, report }) 
     }
   }
   checks.regression_endpoints = proof.regression.results || [];
+
+  /* Layer 13, the second half: an examiner that shares no code with the examinee.
+   * Everything above is a gate written in server.js, judging a tree that was allowed to
+   * rewrite server.js. verifier/audit.js is not: it lives outside walkSelf(), is restored
+   * byte-for-byte if touched, boots its own throwaway copies, and re-runs every accumulated
+   * proof — which is also the only check in the whole battery that can catch the suite
+   * rotting while each round individually passes. Run last because it is the expensive one,
+   * and only when the round is otherwise worth the minutes. */
+  if (contract.audit.required && !failures.length) {
+    const audit = await runIndependentAudit({ timeoutMs: contract.audit.timeout_ms, maxProofs: contract.audit.max_proofs });
+    checks.audit = audit.ok;
+    checks.audit_detail = audit.detail;
+    if (!audit.ok) {
+      failures.push({
+        gate: "audit",
+        label: GATE_LABEL.audit || "ผู้ตรวจอิสระ",
+        why: audit.ran
+          ? "ผู้ตรวจอิสระพบไฟล์พิสูจน์สะสมที่ไม่ผ่านแล้ว"
+          : "รันผู้ตรวจอิสระไม่ได้ — รอบนี้จึงพิสูจน์ไม่ได้ว่าไม่ทำของเดิมเน่า",
+        detail: audit.detail,
+      });
+    }
+  } else if (contract.audit.required) {
+    checks.audit = null;
+    checks.audit_detail = "ข้ามเพราะรอบนี้ตกด่านอื่นไปแล้ว — ผู้ตรวจอิสระรันเฉพาะรอบที่คุ้มจะรัน";
+  }
   return out;
+}
+
+/* ================= Layer 15: A POPULATION GREATER THAN ONE =================
+ * One round = one wall, one approach, one bloodline. `forging` forbade any overlap, and
+ * nowhere in the engine did anything ever generate several candidates and keep the best —
+ * even though the sandbox machinery (materializeTree + bootServer on a random port) had
+ * supported parallel trees since Layer 6. The engine climbed its hill one-handed: the first
+ * approach failing cost the whole round and one of the wall's few attempts.
+ *
+ * The reason it stayed was arithmetic that only looked right: three candidates read as three
+ * times the money. What it actually buys is a much higher chance of passing *this* round,
+ * three scars instead of one, and all of it inside a single round's wall-clock — because the
+ * candidates run at the same time, not one after another.
+ *
+ * How the tournament is arranged so the existing guarantees are untouched:
+ *   1. every candidate is written inside its own materialised tree — ROOT is never touched
+ *      while they are competing, so a losing candidate cannot leave anything behind
+ *   2. each is scored in its own sandbox: syntax, boot, its own proof file, regression sweep
+ *   3. the winner's files are copied into ROOT and then face the *unchanged* full battery,
+ *      including the external judge of Layer 13 — the tournament nominates, it never accepts
+ *   4. every loser is written to scar tissue in the same round, so the next attempt on this
+ *      wall inherits three dead ends instead of one
+ */
+/* Two, not one, and not three. One is the wall. Three reads as three times the money for a
+ * benefit nobody has measured yet on this engine. Two changes the *shape* — a round that can
+ * lose its first approach and still finish — at a cost the owner can see coming, and
+ * FORGE_POPULATION=1 restores the old single-bloodline behaviour exactly. */
+const FORGE_POPULATION = Math.max(1, Math.min(5, Number(process.env.FORGE_POPULATION || 2)));
+const CANDIDATE_DIR = path.join(EVO_DIR, "candidates");
+
+// What each candidate is told to do differently. Diversity has to be instructed, or three
+// samples of the same model produce three spellings of one idea.
+const CANDIDATE_ANGLES = [
+  "เดินทางที่ตรงที่สุด: แก้ที่กลไกซึ่งกำแพงชี้ไว้ตรง ๆ ด้วยจำนวนไฟล์ที่น้อยที่สุด",
+  "เดินทางที่กลับด้าน: ถามว่าถ้าลบหรือยุบสิ่งที่ทำให้กำแพงนี้จำเป็น แทนที่จะเพิ่มของใหม่ จะได้อะไร",
+  "เดินทางข้ามโดเมน: หยิบหลักการจากคลังความรู้ที่ไม่ใช่เรื่องซอฟต์แวร์มาทาบกับกำแพงนี้ก่อนเขียนโค้ด",
+  "เดินทางที่เริ่มจากข้อสอบ: เขียนไฟล์พิสูจน์ให้เสร็จก่อน แล้วค่อยเขียนโค้ดให้ผ่านข้อสอบนั้น",
+  "เดินทางที่เล็กที่สุดที่ยังพิสูจน์ได้: ทำเท่าที่ทำให้ด่านผ่านได้จริง แล้วหยุด",
+];
+
+/* Score one candidate tree in its own sandbox. No AI, no ROOT — this is the part that makes
+ * running five of them at once sane. */
+async function scoreCandidate(dir, { evoId, proofRel }) {
+  const score = { syntax: false, boot: false, capability: false, regression: false, detail: "" };
+  const syn = await syntaxCheck(dir);
+  score.syntax = syn.ok;
+  if (!syn.ok) return { ...score, detail: "syntax: " + syn.detail };
+  const boot = await bootServer(dir, "ผู้สมัคร");
+  score.boot = boot.ok;
+  if (!boot.ok) return { ...score, detail: "boot: " + boot.detail };
+  try {
+    const url = `http://127.0.0.1:${boot.port}`;
+    if (fs.existsSync(path.join(dir, proofRel))) {
+      const proof = await runProof(proofRel, { url, root: dir });
+      score.capability = proof.ok;
+      score.detail = String(proof.detail || "").slice(0, 400);
+    } else {
+      score.detail = `ไม่ได้เขียนไฟล์พิสูจน์ ${proofRel}`;
+    }
+    const reg = await regressionTest(boot.port);
+    score.regression = reg.ok;
+    if (!reg.ok) score.detail += " · " + reg.detail;
+  } finally {
+    boot.stop();
+  }
+  return score;
+}
+
+/* The tournament. `ask` is injected exactly as forgeConverge() injects it, so the selection
+ * logic — the part that decides which candidate the engine becomes — is provable offline
+ * through POST /api/forge/population/simulate without spending K Opus rounds to find out. */
+async function runPopulation({ limit, evoId, before, guarded, k = FORGE_POPULATION, ask, prompt = null }) {
+  const proofRel = `selftest/${evoId}.js`;
+  fs.mkdirSync(CANDIDATE_DIR, { recursive: true });
+  const candidates = [];
+
+  const runOne = async (i) => {
+    const id = `${evoId}_c${i + 1}`;
+    const dir = path.join(CANDIDATE_DIR, id);
+    materializeTree(before, dir, guarded);
+    const angle = CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length];
+    const cand = { id, index: i + 1, dir, angle, answer: null, error: null, score: null, changes: [] };
+    try {
+      cand.answer = await ask({
+        index: i + 1,
+        of: k,
+        angle,
+        dir,
+        evoId,
+        prompt: prompt ? `${prompt}\n\n===== 🧬 แนวทางที่ผู้สมัครคนนี้ต้องเดิน (Layer 15) =====\n${angle}\n(มีผู้สมัคร ${k} คนทำงานพร้อมกันอยู่คนละสำเนาของทรี — ระบบจะรับเพียงคนเดียว โดยดูผลของด่าน ไม่ใช่คำอธิบาย)` : null,
+      });
+      const after = {};
+      for (const rel of Object.keys(before)) {
+        try {
+          after[rel] = fs.readFileSync(path.join(dir, rel), "utf8");
+        } catch {}
+      }
+      try {
+        if (fs.existsSync(path.join(dir, proofRel))) after[proofRel] = fs.readFileSync(path.join(dir, proofRel), "utf8");
+      } catch {}
+      cand.changes = diffSelf(before, after);
+      cand.after = after;
+      cand.score = await scoreCandidate(dir, { evoId, proofRel });
+    } catch (e) {
+      cand.error = String((e && e.message) || e);
+      cand.score = { syntax: false, boot: false, capability: false, regression: false, detail: cand.error };
+    }
+    return cand;
+  };
+
+  const settled = await Promise.all(Array.from({ length: k }, (_, i) => runOne(i)));
+  candidates.push(...settled);
+  return { candidates, ...selectCandidate(candidates) };
+}
+
+/* Selection, kept pure so it can be tested with invented candidates. The order of the tie
+ * breaks is the whole opinion of this layer: passing gates first, then the smallest change
+ * that still passes — a round that touches four files to do what another did in one is not
+ * the better round, however confident its summary sounds. */
+function selectCandidate(candidates) {
+  const passed = (c) => c.score && c.score.syntax && c.score.boot && c.score.capability && c.score.regression;
+  const winners = candidates.filter(passed);
+  const rank = (c) => [
+    (c.changes || []).length,
+    (c.changes || []).reduce((n, ch) => n + Math.abs(ch.bytes_delta || 0), 0),
+    c.index,
+  ];
+  const sorted = winners.slice().sort((a, b) => {
+    const [af, ab_, ai] = rank(a);
+    const [bf, bb, bi] = rank(b);
+    return af - bf || ab_ - bb || ai - bi;
+  });
+  const winner = sorted[0] || null;
+  return {
+    winner,
+    losers: candidates.filter((c) => c !== winner),
+    passed: winners.length,
+    total: candidates.length,
+    why: winner
+      ? `ผู้สมัคร #${winner.index} ผ่านทุกด่านในแซนด์บ็อกซ์ และแตะไฟล์น้อยที่สุดใน ${winners.length} คนที่ผ่าน (${(winner.changes || []).length} ไฟล์)`
+      : `ไม่มีผู้สมัครคนไหนผ่านด่านในแซนด์บ็อกซ์เลย (${candidates.length} คน)`,
+  };
+}
+
+/* ---- Layer 13, third half: the exam author leaves the room too ----
+ * The remaining clause of the wall is that the proof file is written by the same session,
+ * in the same memory, as the code it is meant to interrogate — and since Layer 6.7 that
+ * session gets to *revise* the proof after seeing which gate it failed. A test written by
+ * the author, after seeing the marks, is not a test.
+ *
+ * blindProofPrompt() is the other side: one session that is given the *specification* of the
+ * new capability and the source map, and is never shown the diff, the round's own proof, or
+ * the gate output. `ask` is injected for the same reason forgeConverge() injects it — the
+ * separation can then be exercised offline, through POST /api/forge/blind/simulate, without
+ * spending an Opus round to find out whether the plumbing is right.
+ */
+function blindProofPrompt({ evoId, spec, sourceMap, endpoints }) {
+  return `คุณคือ "ผู้ออกข้อสอบ" ของ The Dot-Connector AI และคุณ **ไม่ได้เป็นคนเขียนโค้ดรอบนี้**
+
+มีรอบวิวัฒนาการหนึ่งเพิ่งอ้างว่าตัวเองเพิ่มความสามารถใหม่ให้ระบบ คุณจะไม่ได้เห็น diff ของมัน
+ไม่ได้เห็นไฟล์พิสูจน์ที่มันเขียนเอง และไม่ได้เห็นว่ามันตกด่านไหนมาก่อน — โดยตั้งใจ
+งานของคุณคือเขียนข้อสอบจาก "คำประกาศ" ของมันล้วน ๆ แล้วปล่อยให้เครื่องเป็นคนตัดสิน
+
+===== คำประกาศของรอบนั้น (นี่คือทั้งหมดที่คุณได้เห็นเกี่ยวกับรอบนี้) =====
+กำแพงที่มันบอกว่าทำลาย: ${spec.wall || "(ไม่ระบุ)"}
+ความสามารถใหม่ที่มันอ้าง: ${spec.new_capability || "(ไม่ระบุ)"}
+สรุปสิ่งที่มันบอกว่าทำ: ${spec.summary || "(ไม่ระบุ)"}
+เส้นทางที่มันประกาศว่าความสามารถนี้จะถูกใช้ผ่าน: ${(spec.endpoints || []).join(", ") || "(ไม่ระบุ)"}
+
+===== แผนที่ซอร์ส (ชื่อสัญลักษณ์:เลขบรรทัด — ไม่ใช่ซอร์สเต็ม และไม่ใช่ diff) =====
+${sourceMap}
+
+===== สิ่งที่ต้องเขียน =====
+สร้างไฟล์ \`selftest/${evoId}.js\` ด้วย Write โดยมีสัญญาเดียวกับไฟล์พิสูจน์ทุกไฟล์ในโฟลเดอร์นั้น:
+  · รับ base URL จาก process.env.DOT_TEST_URL (ถ้าไม่มีให้ exit 2)
+  · ทดสอบ "พฤติกรรมจริง" ผ่าน HTTP เท่านั้น — ห้าม grep หาชื่อฟังก์ชันในซอร์สเพื่อตัดสินว่าผ่าน
+  · exit 0 = คำประกาศนั้นเป็นจริง · exit != 0 = ไม่จริง
+  · ต้องกวาดเส้นทางเดิมเหล่านี้ให้ยังตอบ 200 ครบ: ${endpoints.join(", ")}
+
+⚖ กติกาของผู้ออกข้อสอบ:
+1. เขียนข้อสอบให้ "โค้ดเดิมก่อนรอบนี้ต้องตก" — ถ้าข้อสอบของคุณผ่านได้ทั้งกับโค้ดเก่าและใหม่ แปลว่าคุณวัดไม่ตรงจุด
+2. วัด **คำประกาศ** ไม่ใช่วัดวิธีทำ — อย่าเดาชื่อฟังก์ชันภายใน ให้ยิงผ่านเส้นทางที่มันประกาศไว้
+3. ถ้าคำประกาศคลุมเครือจนเขียนข้อสอบที่ตัดสินได้ไม่ได้จริง ๆ ให้เขียนไฟล์ที่ตกทันทีพร้อมเหตุผลว่าคลุมเครือตรงไหน
+   — คำประกาศที่ตรวจไม่ได้ ต้องไม่ผ่านโดยปริยาย
+4. อย่าเขียนอะไรนอกไฟล์ \`selftest/${evoId}.js\`
+
+ตอบกลับด้วยข้อความสั้น ๆ บรรทัดเดียวว่าคุณวัดอะไร (ไฟล์คือผลงานจริง ไม่ใช่ข้อความตอบ)`;
+}
+
+/* Commissioning that session. Injectable `ask` so the separation is testable without AI. */
+async function commissionBlindProof({ evoId, spec, body, ask = null }) {
+  const contract = loadContract();
+  const proofRel = `selftest/${evoId}.js`;
+  const prompt = blindProofPrompt({
+    evoId,
+    spec,
+    sourceMap: contract.blind_proof.sees_source_map === false ? "(ไม่ได้ให้แผนที่ในโหมดนี้)" : symbolIndex(promptBundle(body)),
+    endpoints: effectiveRegressionEndpoints(),
+  });
+  // The one invariant this function exists to hold: whatever the caller passes in, the
+  // examiner never receives the diff or the examinee's own proof text.
+  const leaked = ["diff", "changes", "proof_text"].filter((k) => k in (spec || {}));
+  if (leaked.length) throw new Error("ผู้ออกข้อสอบต้องไม่เห็น: " + leaked.join(", "));
+  const answer = ask
+    ? await ask({ prompt, evoId })
+    : await runClaude(prompt, {
+        model: FORGE_MODEL,
+        tools: ["Read", "Write", "Glob", "Grep"],
+        permissionMode: "acceptEdits",
+        timeoutMs: FORGE_RETRY_TIMEOUT_MS,
+      });
+  const written = fs.existsSync(path.join(ROOT, proofRel));
+  return {
+    ok: Boolean(written),
+    proof_rel: proofRel,
+    prompt_chars: prompt.length,
+    saw_diff: false,
+    note: String(answer || "").slice(0, 300),
+  };
+}
+
+/* ================= Layer 14: THE SELF-REPLACING PROCESS =================
+ * An accepted round wrote new files, set restart_required = true, fired a toast and waited.
+ * The process still thinking was yesterday's code. An engine built to work while its owner
+ * sleeps could therefore forge itself five times in one night and not get better once — the
+ * longer the owner stayed away, the wider the gap between the thing deciding and the thing
+ * that exists.
+ *
+ * The reason it stayed: a process killing itself to be reborn as code it just wrote, with
+ * nobody watching, is the one risk where a mistake leaves no one to press undo.
+ *
+ * So the undo goes outside the process. Before respawning, the engine writes a sentinel to
+ * evolution/restart.json naming the round and the backup that would restore it. The new
+ * process must clear that sentinel by answering its own HTTP within RESTART_PROOF_MS. If it
+ * does not — because it crashed on boot, or booted and could not serve — a detached watchdog
+ * that shares no memory with either process restores the backup and boots the tree that was
+ * known to work. Every outcome is appended to the sentinel's history, so the risk becomes a
+ * number in GET /api/restart/status instead of a fear.
+ */
+const RESTART_FILE = path.join(EVO_DIR, "restart.json");
+const RESTART_PROOF_MS = Math.max(10000, Number(process.env.RESTART_PROOF_MS || 45000));
+
+function readRestartRecord() {
+  return loadJson(RESTART_FILE, { pending: null, history: [] });
+}
+function writeRestartRecord(rec) {
+  rec.history = (rec.history || []).slice(-30);
+  saveJson(RESTART_FILE, rec);
+}
+function restartStatus() {
+  const rec = readRestartRecord();
+  const state = loadState();
+  const ap = autopilot();
+  return {
+    pending: rec.pending,
+    history: (rec.history || []).slice(-12).reverse(),
+    // The gap this layer exists to close, as a boolean anyone can read.
+    running_is_disk: !state.restart_required,
+    restart_required: Boolean(state.restart_required),
+    auto_restart: {
+      // Auto-restart obeys the ignition like every other clock: with the engine stopped, a
+      // round the owner started by hand still leaves the restart to the owner.
+      armed: ap.master === true && ap.evolve === true,
+      proof_ms: RESTART_PROOF_MS,
+      reason: ap.master ? (ap.evolve ? null : "สวิตช์ Self-Forge ปิดอยู่") : "เครื่องยนต์หยุดอยู่",
+    },
+    booted_at: BOOT_AT,
+    watchdog: "evolution/restart-watchdog.js",
+  };
+}
+
+/* Replace this process with the code on disk. The sentinel is written first, always: a
+ * respawn that dies before it can be observed must still be recoverable. */
+function respawnSelf({ reason, evoId = null, auto = false, backup = null }) {
+  const rec = readRestartRecord();
+  const started = new Date().toISOString();
+  rec.pending = { at: started, reason, evo_id: evoId, backup, auto, pid: process.pid, deadline_ms: RESTART_PROOF_MS };
+  writeRestartRecord(rec);
+
+  const state = loadState();
+  state.restart_required = false;
+  slog(state, `♻️ รีสตาร์ตตัวเอง (${reason})${auto ? " — อัตโนมัติหลังรอบที่ผ่าน" : ""} · สุนัขเฝ้าบ้านกำลังนับถอยหลัง ${Math.round(RESTART_PROOF_MS / 1000)} วินาที`);
+  saveState(state);
+
+  // The watchdog is detached on purpose: it must outlive both the process that spawns it
+  // and the process it is waiting for, or it cannot be the thing that rescues either.
+  try {
+    spawn(process.execPath, [path.join(EVO_DIR, "restart-watchdog.js")], {
+      cwd: ROOT,
+      env: { ...process.env, DOT_PORT: String(PORT), DOT_ROOT: ROOT, DOT_DEADLINE_MS: String(RESTART_PROOF_MS) },
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+    }).unref();
+  } catch (e) {
+    console.error("  [restart] เรียกสุนัขเฝ้าบ้านไม่สำเร็จ:", e.message);
+  }
+
+  server.close(() => {
+    setTimeout(() => {
+      spawn(process.execPath, [path.join(ROOT, "server.js")], {
+        cwd: ROOT,
+        env: process.env,
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true,
+      }).unref();
+      process.exit(0);
+    }, 1200);
+  });
+}
+
+/* Called by the new process once it is actually serving. Clearing the sentinel is the only
+ * evidence the watchdog accepts — a process that boots but cannot answer has not arrived. */
+function confirmRestart() {
+  const rec = readRestartRecord();
+  if (!rec.pending) return null;
+  const p = rec.pending;
+  const ms = Date.now() - new Date(p.at).getTime();
+  rec.pending = null;
+  rec.history.push({ ...p, outcome: "ok", confirmed_at: new Date().toISOString(), took_ms: ms, new_pid: process.pid });
+  writeRestartRecord(rec);
+  const state = loadState();
+  slog(state, `✅ รีสตาร์ตตัวเองสำเร็จใน ${(ms / 1000).toFixed(1)} วินาที — โค้ดที่กำลังคิดคือโค้ดบนดิสก์แล้ว`);
+  saveState(state);
+  return { took_ms: ms };
+}
+
+/* The independent auditor, run as a gate. Deliberately a child process of the *frozen* file:
+ * requiring it into this process would give the judged tree a chance to shadow it. */
+function runIndependentAudit({ timeoutMs = 900000, maxProofs = 14 } = {}) {
+  return new Promise((resolve) => {
+    if (!fs.existsSync(path.join(VERIFIER_DIR, "audit.js"))) {
+      // Fail closed: a missing invigilator is not a pass.
+      return resolve({ ok: false, ran: false, detail: "ไม่พบ verifier/audit.js — ผู้ตรวจอิสระหายไปจากทรี" });
+    }
+    let out = "";
+    let err = "";
+    let done = false;
+    const child = spawn(process.execPath, [path.join(VERIFIER_DIR, "audit.js"), "--json"], {
+      cwd: ROOT,
+      windowsHide: true,
+      env: { ...process.env, AUDIT_MAX_PROOFS: String(maxProofs) },
+    });
+    const finish = (r) => {
+      if (done) return;
+      done = true;
+      resolve(r);
+    };
+    const timer = setTimeout(() => {
+      try {
+        child.kill();
+      } catch {}
+      finish({ ok: false, ran: false, detail: `ผู้ตรวจอิสระรันไม่จบใน ${Math.round(timeoutMs / 1000)} วินาที` });
+    }, timeoutMs);
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("error", (e) => {
+      clearTimeout(timer);
+      finish({ ok: false, ran: false, detail: "เรียกผู้ตรวจอิสระไม่สำเร็จ: " + e.message });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      let report = null;
+      try {
+        report = JSON.parse(out.slice(out.indexOf("{")));
+      } catch {}
+      if (!report) {
+        return finish({ ok: false, ran: false, detail: `ผู้ตรวจอิสระตอบกลับมาอ่านไม่ออก (exit ${code}) ${err.slice(0, 400)}` });
+      }
+      const broken = (report.results || []).filter((r) => !r.ok);
+      finish({
+        ok: code === 0 && broken.length === 0,
+        ran: true,
+        detail:
+          `ผู้ตรวจอิสระรันไฟล์พิสูจน์สะสม ${report.total} ไฟล์ · ผ่าน ${report.passed} · เน่า ${report.broken}` +
+          (broken.length
+            ? "\nไฟล์ที่ไม่ผ่าน:\n" +
+              broken
+                .map((b) => `  · ${b.file}: ${(b.failures || []).slice(0, 3).join(" · ") || "exit " + b.code}`)
+                .join("\n")
+            : ""),
+        report: { total: report.total, passed: report.passed, broken: report.broken },
+      });
+    });
+  });
 }
 
 // The round's own test output, turned back into a prompt. This is the whole point of the
@@ -4697,6 +5459,79 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
     let sessionId = null;
     let retryError = null;
     let loop;
+    /* 2.9 Layer 15 — before the single bloodline starts, run a tournament. K candidates write
+     *     in K separate materialised trees (ROOT untouched), each is scored in its own
+     *     sandbox, and the winner's files are copied into ROOT to face the real battery
+     *     below unchanged. The losers become scar tissue in this same round. */
+    let tournament = null;
+    if (!consolidating && FORGE_POPULATION > 1 && prompt) {
+      try {
+        tournament = await runPopulation({
+          limit: target,
+          evoId,
+          before,
+          guarded,
+          k: FORGE_POPULATION,
+          prompt,
+          ask: async ({ dir, prompt: candPrompt }) =>
+            await runClaude(candPrompt, {
+              model: FORGE_MODEL,
+              tools: FORGE_TOOLS,
+              permissionMode: "acceptEdits",
+              timeoutMs: FORGE_TIMEOUT_MS,
+              cwd: dir,
+            }),
+        });
+        entry.population = {
+          k: FORGE_POPULATION,
+          passed: tournament.passed,
+          why: tournament.why,
+          candidates: tournament.candidates.map((c) => ({
+            index: c.index,
+            angle: c.angle,
+            files: (c.changes || []).length,
+            score: c.score,
+            error: c.error,
+            winner: c === tournament.winner,
+          })),
+        };
+        slog(state, `🧬 รอบนี้ส่งผู้สมัคร ${FORGE_POPULATION} คนลงแข่ง — ${tournament.why}`);
+        // Every loser is a scar, banked now rather than lost with the sandbox.
+        for (const c of tournament.losers) {
+          try {
+            writeAttempted(`${evoId}_c${c.index}`, c.after || {}, c.changes || []);
+          } catch {}
+        }
+        if (tournament.winner) {
+          // Install the nominee. Only files it actually changed move — a candidate cannot
+          // smuggle in the rest of its tree, and data/ never travels.
+          for (const ch of tournament.winner.changes || []) {
+            const src = path.join(tournament.winner.dir, ch.path);
+            const dst = path.join(ROOT, ch.path);
+            if (ch.action === "deleted") {
+              try {
+                fs.unlinkSync(dst);
+              } catch {}
+            } else if (fs.existsSync(src)) {
+              fs.mkdirSync(path.dirname(dst), { recursive: true });
+              fs.copyFileSync(src, dst);
+            }
+          }
+          restoreGuarded(guarded);
+        }
+      } catch (e) {
+        slog(state, "รอบแข่งผู้สมัครล้มเหลว — ถอยไปใช้รอบเดี่ยวตามเดิม: " + e.message);
+        tournament = null;
+      } finally {
+        try {
+          fs.rmSync(CANDIDATE_DIR, { recursive: true, force: true });
+        } catch {}
+      }
+    }
+    // A tournament that produced a winner has already written the code; the loop below then
+    // only has to judge and, if a gate fails, repair it. A tournament with no winner falls
+    // straight through to the ordinary single-bloodline round, which is exactly the old
+    // behaviour — the population can only ever add a chance, never remove one.
     try {
       loop = await forgeConverge({
         maxTurns: FORGE_MAX_TURNS,
@@ -4711,9 +5546,25 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
             resume: sessionId,
           };
           if (turn === 1) {
+            // Layer 15: the tournament already wrote turn 1 — its winner's answer *is* the
+            // answer. Asking again would throw away the code that just won and pay for it twice.
+            if (tournament && tournament.winner) return tournament.winner.answer;
             const first = await runClaudeRaw(prompt, opts);
             sessionId = first.sessionId;
             return first.text;
+          }
+          // A repair turn after a tournament has no session to resume — the winner was written
+          // by a process that has already exited — so it gets the round's prompt again with the
+          // gate output attached, rather than feedback that refers to a conversation nobody had.
+          if (!sessionId) {
+            try {
+              const fresh = await runClaudeRaw(`${prompt}\n\n${feedback}`, { ...opts, resume: null });
+              sessionId = fresh.sessionId;
+              return fresh.text;
+            } catch (e) {
+              retryError = e.message;
+              return null;
+            }
           }
           // A repair turn that cannot even be started must not destroy the round: keep the
           // verdict of the turn that did run, exactly as the old one-shot forge would have.
@@ -5066,6 +5917,22 @@ async function attemptEvolution({ limitId = null, auto = false, mode = "expansio
     saveState(state);
     ledger.unshift(entry);
     saveJson(EVO_FILE, ledger);
+
+    /* Layer 14: close the gap now, not when somebody happens to look at the page. An
+     * accepted round is only an improvement to the code on disk until the process running
+     * it is the process that wrote it — and an engine meant to work overnight cannot wait
+     * for morning to become the thing it built. Armed by the ignition, never by default:
+     * the same switch that lets it rewrite itself unattended is the one that lets it
+     * relaunch itself unattended. The watchdog outside makes that survivable. */
+    if (entry.verdict === "accepted" && autopilot().can_evolve) {
+      entry.auto_restart = { at: new Date().toISOString(), backup: entry.backup || null };
+      saveJson(EVO_FILE, ledger);
+      forging = false;
+      setTimeout(
+        () => respawnSelf({ reason: `รอบ ${evoId} ผ่านทุกด่าน`, evoId, auto: true, backup: entry.backup || null }),
+        1500
+      );
+    }
     return entry;
   } finally {
     forging = false;
@@ -5883,6 +6750,257 @@ const server = http.createServer(async (req, res) => {
         })
       );
     }
+    /* ---- Layer 15: how many bloodlines a round is allowed ---- */
+    if (p === "/api/forge/population" && req.method === "GET") {
+      const ledger = loadJson(EVO_FILE, []);
+      const withPop = ledger.filter((e) => e && e.population);
+      return sendJson(res, 200, {
+        k: FORGE_POPULATION,
+        enabled: FORGE_POPULATION > 1,
+        max: 5,
+        angles: CANDIDATE_ANGLES,
+        env: "FORGE_POPULATION",
+        note:
+          FORGE_POPULATION > 1
+            ? `ทุกรอบขยายจะส่งผู้สมัคร ${FORGE_POPULATION} คนลงแข่งในสำเนาทรีคนละชุด แล้วรับคนเดียว`
+            : "ตอนนี้หนึ่งรอบ = หนึ่งผู้สมัคร (พฤติกรรมเดิม) — ตั้ง FORGE_POPULATION=3 เพื่อเปิดการแข่ง",
+        rounds: withPop.slice(0, 10).map((e) => ({ id: e.id, at: e.at, verdict: e.verdict, ...e.population })),
+      });
+    }
+    /* The selection logic, driven with invented candidates. This is the part that decides
+     * which candidate the engine *becomes*, so it must be checkable without paying for K
+     * Opus rounds to observe one decision. */
+    if (p === "/api/forge/population/simulate" && req.method === "POST") {
+      const body = await readBody(req);
+      const rows = Array.isArray(body.candidates) ? body.candidates : [];
+      if (!rows.length) return sendJson(res, 400, { error: "ต้องส่ง candidates อย่างน้อยหนึ่งคน" });
+      const candidates = rows.map((c, i) => ({
+        index: Number(c.index) || i + 1,
+        angle: String(c.angle || CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length]),
+        changes: Array.isArray(c.changes)
+          ? c.changes
+          : Array.from({ length: Math.max(0, Number(c.files) || 0) }, (_, n) => ({
+              path: `f${n}.js`,
+              action: "modified",
+              bytes_delta: Number(c.bytes) || 0,
+            })),
+        score: {
+          syntax: c.score ? c.score.syntax !== false : true,
+          boot: c.score ? c.score.boot !== false : true,
+          capability: c.score ? c.score.capability === true : false,
+          regression: c.score ? c.score.regression !== false : true,
+          detail: (c.score && c.score.detail) || "",
+        },
+      }));
+      const sel = selectCandidate(candidates);
+      return sendJson(res, 200, {
+        simulated: true,
+        total: sel.total,
+        passed: sel.passed,
+        winner: sel.winner ? { index: sel.winner.index, files: sel.winner.changes.length } : null,
+        losers: sel.losers.map((c) => ({ index: c.index, files: (c.changes || []).length, score: c.score })),
+        why: sel.why,
+      });
+    }
+
+    /* The whole tournament — real materialised trees, real boots, real regression sweeps —
+     * with a stub in place of the Opus session. Everything except the thinking is exercised,
+     * which is the half most likely to be wrong and the half a live round is too expensive
+     * to debug. */
+    if (p === "/api/forge/population/dryrun" && req.method === "POST") {
+      // ไม่มีการเรียก AI ในเส้นทางนี้เลย (เซสชันถูกแทนด้วยตัวปลอม) จึงไม่ถูกกันด้วย DOT_SELFTEST
+      // — และมันต้องรันได้ในโหมดทดสอบ เพราะผู้ตรวจอิสระคือคนที่ต้องพิสูจน์กลไกนี้
+      if (forging) return sendJson(res, 409, { error: "Self-Forge กำลังทำงานอยู่" });
+      const body = await readBody(req);
+      const k = Math.max(2, Math.min(4, Number(body.k) || 2));
+      const before = promptBundle(readSelf());
+      const guarded = readGuarded();
+      const evoId = "evo_dryrun";
+      const started = Date.now();
+      try {
+        const run = await runPopulation({
+          limit: { id: "dryrun", title: "การซ้อมของ Layer 15" },
+          evoId,
+          before,
+          guarded,
+          k,
+          prompt: null,
+          // Candidate 1 writes a tree that boots; the rest write one that does not. A
+          // tournament that cannot tell those apart is not a tournament.
+          ask: async ({ index, dir }) => {
+            const file = path.join(dir, "server.js");
+            const src = fs.readFileSync(file, "utf8");
+            if (index === 1) {
+              fs.writeFileSync(file, src + `\n// ผู้สมัครซ้อม #${index}\n`, "utf8");
+            } else {
+              fs.writeFileSync(file, src + `\n((( ผู้สมัครซ้อม #${index} เขียนโค้ดพัง\n`, "utf8");
+            }
+            return `{"broke_it": true, "summary": "ผู้สมัครซ้อม #${index}"}`;
+          },
+        });
+        return sendJson(res, 200, {
+          dryrun: true,
+          took_ms: Date.now() - started,
+          total: run.total,
+          passed: run.passed,
+          why: run.why,
+          // Nobody wins a dry run: candidate 1 boots but writes no proof file, so it fails
+          // the capability gate exactly as a real candidate that claimed without proving would.
+          winner: run.winner ? run.winner.index : null,
+          candidates: run.candidates.map((c) => ({
+            index: c.index,
+            angle: c.angle,
+            files: (c.changes || []).length,
+            score: c.score,
+            error: c.error,
+          })),
+          root_untouched: fs.readFileSync(path.join(ROOT, "server.js"), "utf8").length,
+        });
+      } catch (e) {
+        return sendJson(res, 500, { error: e.message });
+      } finally {
+        try {
+          fs.rmSync(CANDIDATE_DIR, { recursive: true, force: true });
+        } catch {}
+      }
+    }
+
+    /* ---- Layer 13: the judge, from outside ---- */
+    // The contract itself, plus whether the source currently honours it. This is the one
+    // status page in the engine that is not written by the thing it describes.
+    if (p === "/api/judge" && req.method === "GET") {
+      const c = loadContract();
+      const floor = contractFloor();
+      const declared = new Set(REGRESSION_ENDPOINTS);
+      const dropped = floor.filter((ep) => !declared.has(ep));
+      let auditFiles = [];
+      try {
+        auditFiles = fs.readdirSync(PROOF_DIR).filter((f) => f.endsWith(".js")).sort();
+      } catch {}
+      return sendJson(res, 200, {
+        contract_file: "verifier/contract.json",
+        contract_present: !c.missing,
+        frozen_at: c.frozen_at || null,
+        // Why this file is trustworthy: it is outside the editable set and restored if touched.
+        outside_editable_scope: !walkSelf().includes("verifier/contract.json"),
+        guarded: Object.keys(readGuarded()).includes("verifier/contract.json"),
+        floor: floor.length,
+        floor_endpoints: floor,
+        sweeping: effectiveRegressionEndpoints().length,
+        dropped_from_source: dropped,
+        honours_contract: dropped.length === 0,
+        audit: { ...c.audit, proofs_on_disk: auditFiles.length, auditor_present: fs.existsSync(path.join(VERIFIER_DIR, "audit.js")) },
+        blind_proof: c.blind_proof,
+        required_gates: c.required_gates || {},
+      });
+    }
+    // Drive the blind exam author with a stub instead of an Opus session, so the one thing
+    // that matters about it — that the examiner cannot see the diff — is provable in a second.
+    if (p === "/api/forge/blind/simulate" && req.method === "POST") {
+      const body = await readBody(req);
+      const spec = body.spec && typeof body.spec === "object" ? body.spec : {};
+      let seen = null;
+      try {
+        const r = await commissionBlindProof({
+          evoId: "evo_simulate",
+          spec,
+          body: promptBundle(readSelf()),
+          ask: async ({ prompt }) => {
+            seen = prompt;
+            return "(จำลอง: ไม่ได้เขียนไฟล์จริง)";
+          },
+        });
+        const diffish = /--- FILE:|^\+\+\+ |^@@ |diff --git/m.test(seen || "");
+        return sendJson(res, 200, {
+          simulated: true,
+          ...r,
+          // What the examiner was actually handed, checked rather than promised.
+          examiner_saw: {
+            chars: (seen || "").length,
+            wall: Boolean(spec.wall) && seen.includes(String(spec.wall)),
+            declared_capability: Boolean(spec.new_capability) && seen.includes(String(spec.new_capability)),
+            source_map: /:\d+\s/.test(seen || ""),
+            diff: diffish,
+            round_own_proof: Boolean(spec.proof_text) || /selftest\/evo_[a-f0-9]{8}\.js[\s\S]{0,40}require\(/.test(seen || ""),
+          },
+          head: (seen || "").slice(0, 900),
+        });
+      } catch (e) {
+        return sendJson(res, 400, { error: e.message });
+      }
+    }
+
+    /* ---- Layer 12: what reading itself costs, per wall ---- */
+    // The source section a round would be handed, with its budget arithmetic exposed. The
+    // wall this breaks was held up by "the prompt is frightening enough already" — a fear
+    // that was never once a number. Now it is one, per wall, before the round is spent.
+    if (p === "/api/forge/bundle" && req.method === "GET") {
+      const limits = loadJson(LIMITS_FILE, []);
+      const wanted = String(url.searchParams.get("limitId") || "");
+      const ledger = loadJson(EVO_FILE, []);
+      const ranking = targetRanking(limits, ledger, { adoption: categoryOf(adoptionDebt()) });
+      const target = wanted
+        ? limits.find((l) => limitIdSet(l).includes(wanted))
+        : (ranking.length && limits.find((l) => l.id === ranking[0].id)) || null;
+      if (wanted && !target) return sendJson(res, 404, { error: "ไม่พบกำแพงนี้ในทะเบียน" });
+      const body = promptBundle(readSelf());
+      // Budgets are overridable here on purpose: the degradation path (what happens when the
+      // engine outgrows its own ceiling) is the half of this layer that matters most, and it
+      // must be testable today rather than in whatever year the source reaches 46 KB of map.
+      const opts = {};
+      const qBudget = Number(url.searchParams.get("budget"));
+      const qFocus = Number(url.searchParams.get("focusChars"));
+      if (Number.isFinite(qBudget) && qBudget > 0) opts.totalChars = Math.max(500, qBudget);
+      if (Number.isFinite(qFocus) && qFocus > 0) opts.focusChars = Math.max(200, qFocus);
+      const focused = focusedBundle(body, target, opts);
+      const full = sourceBundle(body).length;
+      return sendJson(res, 200, {
+        wall: target ? { id: target.id, title: target.title } : null,
+        ...focused.metrics,
+        full_source_chars: full,
+        // The one ratio the wall was about: how much of its own growth a round still has to pay for.
+        saved_ratio: full ? Math.round((1 - focused.metrics.total_chars / full) * 1000) / 1000 : 0,
+        // Every file in the tree must still be reachable from the text, however tight the
+        // budget got — a bundle that drops a file silently is worse than one that is too big.
+        files_in_tree: Object.keys(body).length,
+        files_named: Object.keys(body).filter((rel) => focused.text.includes(rel)).length,
+        head: focused.text.slice(0, 1500),
+      });
+    }
+
+    /* ---- Layer 11: the behavioural half of the mirror ---- */
+    // What the next introspection will be told about how this engine actually behaved —
+    // readable before spending one, and the only part of the mirror that cannot be
+    // reconstructed by reading the source.
+    if (p === "/api/self/runtime" && req.method === "GET") {
+      const days = Math.max(1, Math.min(90, Number(url.searchParams.get("days")) || RUNTIME_WINDOW_DAYS));
+      const dossier = runtimeDossier({ days });
+      const block = buildRuntimeBlock(dossier);
+      return sendJson(res, 200, { ...dossier, block, block_chars: block.length });
+    }
+    // The whole mirror prompt, assembled but never sent. A round that costs twelve minutes
+    // should be inspectable for free before it is spent.
+    if (p === "/api/introspect/preview" && req.method === "GET") {
+      const body = readSelf();
+      const dots = loadJson(DOTS_FILE, []);
+      const connections = loadJson(CONN_FILE, []);
+      const limits = loadJson(LIMITS_FILE, []);
+      const prompt = buildIntrospectPrompt(body, dots, connections, limits);
+      const runtime = buildRuntimeBlock(runtimeDossier());
+      return sendJson(res, 200, {
+        prompt_chars: prompt.length,
+        parts: {
+          source_map: forgeBundle(promptBundle(body)).length,
+          knowledge: introspectKnowledgeBlock(dots, connections).length,
+          runtime: runtime.length,
+        },
+        // Proof that behaviour reaches the mirror, not just an assurance that it does.
+        includes_runtime_block: prompt.includes(runtime),
+        requires_runtime_evidence: prompt.includes("runtime_evidence"),
+        head: prompt.slice(0, 1200),
+      });
+    }
+
     /* ---- Layer 10: The RemLedger — the register as an accumulating account ---- */
     // Every state change any wall has ever made. limits.json says what is true now;
     // this says how it got that way, and it is the only one of the two that cannot lie
@@ -5950,6 +7068,9 @@ const server = http.createServer(async (req, res) => {
       const brief = forgeKnowledge(target);
       const knowledgeBlock = buildKnowledgeBlock(brief);
       const prompt = buildForgePrompt(target, readSelf(), "evo_<รอบถัดไป>", hist, debt, rank, brief);
+      // Layer 12: the same call the prompt above just made, so the reported numbers are the
+      // numbers — not a second opinion computed a different way.
+      const bundleReport = focusedBundle(promptBundle(readSelf()), target);
       const marker = "===== ซอร์สโค้ดปัจจุบันของคุณ =====";
       const cut = prompt.indexOf(marker);
       const adoptionBlock = buildAdoptionBlock(target, debt, rank);
@@ -5986,6 +7107,8 @@ const server = http.createServer(async (req, res) => {
           failure_block: hist.block.length,
           adoption_block: adoptionBlock.length,
           source_bundle: sourceBundle(promptBundle(readSelf())).length,
+          // Layer 12: what this round will really be handed, and how that number was reached.
+          source_sent: bundleReport.metrics,
           total: prompt.length,
         },
         // The prompt minus the source bundle — the part where the lessons actually live.
@@ -6341,25 +7464,17 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === "/api/restart" && req.method === "POST") {
       if (SELFTEST) return sendJson(res, 503, { error: "โหมดทดสอบ" });
+      const body = await readBody(req);
       sendJson(res, 200, { restarting: true });
-      const state = loadState();
-      state.restart_required = false;
-      slog(state, "รีสตาร์ตเครื่องยนต์เพื่อโหลดโค้ดใหม่ของตัวเอง");
-      saveState(state);
-      // Break the last physical limit: a running process replacing itself with its new self.
-      server.close(() => {
-        setTimeout(() => {
-          spawn(process.execPath, [path.join(ROOT, "server.js")], {
-            cwd: ROOT,
-            env: process.env,
-            detached: true,
-            stdio: "ignore",
-            windowsHide: true,
-          }).unref();
-          process.exit(0);
-        }, 1200);
-      });
+      respawnSelf({ reason: String(body.reason || "ผู้ใช้กดรีสตาร์ต"), evoId: body.evoId || null, auto: false });
       return;
+    }
+
+    /* ---- Layer 14: the gap between the process that thinks and the code that exists ---- */
+    // What the watchdog knows: whether a self-restart is in flight, how the last ones went,
+    // and whether the running process is the code on disk at all.
+    if (p === "/api/restart/status" && req.method === "GET") {
+      return sendJson(res, 200, restartStatus());
     }
 
     /* ---- Layers 2+3 ---- */
@@ -6589,6 +7704,11 @@ server.listen(PORT, () => {
     bootDirty = true;
   }
   if (bootDirty) saveState(boot);
+  /* Layer 14: tell the watchdog we arrived. Not "the port is open" — this process, serving,
+   * having got far enough through boot to run this line. The watchdog accepts nothing else,
+   * because a process that binds and then falls over is exactly the failure being guarded. */
+  const arrived = confirmRestart();
+  if (arrived) console.log(`  [restart] ยืนยันตัวเองกับสุนัขเฝ้าบ้านแล้ว (${(arrived.took_ms / 1000).toFixed(1)} วินาที)`);
 
   console.log(`\n  The Dot-Connector AI v5 (The Self-Forge · The Ignition · The RemLedger)`);
   console.log(`  engine:  claude cli (connect: ${MODEL}, harvest: ${HARVEST_MODEL})`);

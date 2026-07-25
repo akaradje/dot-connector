@@ -1,0 +1,18 @@
+{
+  "pending": null,
+  "history": [
+    {
+      "at": "2026-07-25T14:05:51.849Z",
+      "reason": "���ͺ Layer 14",
+      "evo_id": null,
+      "backup": null,
+      "auto": false,
+      "pid": 17828,
+      "deadline_ms": 45000,
+      "outcome": "ok",
+      "confirmed_at": "2026-07-25T14:05:53.178Z",
+      "took_ms": 1329,
+      "new_pid": 3840
+    }
+  ]
+}

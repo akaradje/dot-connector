@@ -1,0 +1,84 @@
+{
+  "_": [
+    "สัญญาการตรวจ (Layer 13) — ไฟล์นี้อยู่ใน verifier/ ซึ่งอยู่นอก walkSelf() และถูกเทียบไบต์ต่อไบต์",
+    "โดย readGuarded() ทุกรอบ แปลว่ารอบหลอมตัวเองอ่านมันได้แต่แก้ไม่ได้ — รอบที่แตะไฟล์นี้เป็นโมฆะทันที",
+    "",
+    "ทำไมถึงต้องมีไฟล์นี้: เดิม REGRESSION_ENDPOINTS อยู่ใน server.js ไฟล์เดียวกับที่รอบหลอมตัวเองมีสิทธิ์แก้",
+    "รอบที่ทำของเดิมพัง แล้วลบเส้นนั้นออกจากรายการกวาดในคอมมิตเดียวกัน จะผ่านด่าน regression ได้อย่างสะอาด",
+    "โดยไม่มีใครรู้ สิ่งที่ห้ามไม่ให้มันทำแบบนั้นคือ 'กฎข้อ 10 ที่เป็นข้อความในพรอมป์ต' ไม่ใช่กลไก",
+    "",
+    "ตอนนี้รายการข้างล่างคือ 'พื้น' ที่ลดลงไม่ได้ด้วยการแก้ซอร์ส — ถอดออกได้ทางเดียวคือผ่านเส้นทางปลดระวาง",
+    "ของ Layer 6.6 ซึ่งต้องมีหลักฐานจากบันทึกการใช้งานจริงว่าไม่มีใครเรียกเลย"
+  ],
+  "frozen_at": "2026-07-25",
+  "frozen_by": "Layer 13 — The External Judge",
+  "regression_endpoints": [
+    "/api/dots",
+    "/api/connections",
+    "/api/limits",
+    "/api/self",
+    "/api/evolution",
+    "/api/forgotten",
+    "/api/serendipity/status",
+    "/api/lessons",
+    "/api/forge/preview",
+    "/api/forge/loop",
+    "/api/evolution/attempted",
+    "/api/scout/status",
+    "/api/scout/candidates",
+    "/api/scout/gaps",
+    "/api/consolidation/preview",
+    "/api/endpoints",
+    "/api/knowledge/preview",
+    "/api/knowledge/archive",
+    "/api/adoption",
+    "/api/forge/knowledge",
+    "/api/autopilot",
+    "/api/limits/events",
+    "/api/self/runtime",
+    "/api/introspect/preview",
+    "/api/forge/bundle",
+    "/api/judge",
+    "/api/restart/status",
+    "/api/forge/population"
+  ],
+  "required_gates": {
+    "expansion": [
+      "changed",
+      "guard",
+      "proof_written",
+      "declared_usage",
+      "syntax",
+      "smoke",
+      "capability",
+      "differential",
+      "regression",
+      "audit",
+      "contract"
+    ],
+    "consolidation": [
+      "changed",
+      "guard",
+      "syntax",
+      "smoke",
+      "preservation",
+      "shrink",
+      "regression",
+      "audit",
+      "contract"
+    ]
+  },
+  "audit": {
+    "_": "ผู้ตรวจอิสระต้องรันทุกรอบ ไม่ใช่เฉพาะตอนมนุษย์นึกได้ · ห้ามมีไฟล์พิสูจน์สะสมข้อไหนเน่า",
+    "required": true,
+    "max_proofs": 14,
+    "timeout_ms": 900000,
+    "fail_closed": true
+  },
+  "blind_proof": {
+    "_": "ผู้ออกข้อสอบกับผู้เข้าสอบต้องไม่ใช่ความทรงจำก้อนเดียวกัน — เซสชันที่เขียนไฟล์พิสูจน์เห็นแค่ข้อกำหนดของความสามารถ ไม่เห็น diff",
+    "enabled": true,
+    "sees_diff": false,
+    "sees_source_map": true
+  }
+}

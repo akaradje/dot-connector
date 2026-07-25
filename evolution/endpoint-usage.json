@@ -2,9 +2,9 @@
   "started_at": "2026-07-25T05:10:35.081Z",
   "endpoints": {
     "/api/self": {
-      "hits": 20,
+      "hits": 31,
       "first_hit": "2026-07-25T05:10:46.317Z",
-      "last_hit": "2026-07-25T13:40:59.709Z"
+      "last_hit": "2026-07-25T14:16:26.972Z"
     },
     "/api/transcend": {
       "hits": 8,
@@ -12,54 +12,54 @@
       "last_hit": "2026-07-25T07:29:41.639Z"
     },
     "/api/dots": {
-      "hits": 47,
+      "hits": 54,
       "first_hit": "2026-07-25T05:13:22.590Z",
-      "last_hit": "2026-07-25T13:40:59.641Z"
+      "last_hit": "2026-07-25T14:16:26.959Z"
     },
     "/api/connections": {
-      "hits": 10,
+      "hits": 12,
       "first_hit": "2026-07-25T05:13:22.599Z",
-      "last_hit": "2026-07-25T13:40:59.665Z"
+      "last_hit": "2026-07-25T14:08:43.848Z"
     },
     "/api/lessons": {
-      "hits": 7,
+      "hits": 9,
       "first_hit": "2026-07-25T05:13:22.604Z",
-      "last_hit": "2026-07-25T13:37:08.368Z"
+      "last_hit": "2026-07-25T14:08:43.853Z"
     },
     "/api/limits": {
-      "hits": 15,
+      "hits": 23,
       "first_hit": "2026-07-25T05:13:23.045Z",
-      "last_hit": "2026-07-25T13:40:59.672Z"
+      "last_hit": "2026-07-25T14:16:27.114Z"
     },
     "/api/forgotten": {
-      "hits": 47,
+      "hits": 49,
       "first_hit": "2026-07-25T05:13:23.057Z",
-      "last_hit": "2026-07-25T13:40:59.990Z"
+      "last_hit": "2026-07-25T14:08:43.989Z"
     },
     "/api/scout/status": {
-      "hits": 44,
+      "hits": 46,
       "first_hit": "2026-07-25T05:13:23.060Z",
-      "last_hit": "2026-07-25T13:37:08.497Z"
+      "last_hit": "2026-07-25T14:08:44.013Z"
     },
     "/api/evolution": {
-      "hits": 11,
+      "hits": 14,
       "first_hit": "2026-07-25T05:13:23.128Z",
-      "last_hit": "2026-07-25T13:40:59.952Z"
+      "last_hit": "2026-07-25T14:08:43.964Z"
     },
     "/api/serendipity/status": {
-      "hits": 49,
+      "hits": 52,
       "first_hit": "2026-07-25T05:13:23.130Z",
-      "last_hit": "2026-07-25T13:41:00.013Z"
+      "last_hit": "2026-07-25T14:08:44.010Z"
     },
     "/api/consolidation/preview": {
-      "hits": 12,
+      "hits": 14,
       "first_hit": "2026-07-25T05:13:23.361Z",
-      "last_hit": "2026-07-25T13:37:08.644Z"
+      "last_hit": "2026-07-25T14:08:44.110Z"
     },
     "/api/forge/preview": {
-      "hits": 3,
+      "hits": 6,
       "first_hit": "2026-07-25T05:18:26.765Z",
-      "last_hit": "2026-07-25T13:19:56.398Z"
+      "last_hit": "2026-07-25T14:02:52.222Z"
     },
     "/api/consolidate": {
       "hits": 1,
@@ -67,39 +67,39 @@
       "last_hit": "2026-07-25T05:19:32.495Z"
     },
     "/api/introspect": {
-      "hits": 2,
+      "hits": 3,
       "first_hit": "2026-07-25T05:42:09.567Z",
-      "last_hit": "2026-07-25T06:45:08.694Z"
+      "last_hit": "2026-07-25T14:21:26.637Z"
     },
     "/api/adoption": {
-      "hits": 8,
+      "hits": 10,
       "first_hit": "2026-07-25T07:36:41.248Z",
-      "last_hit": "2026-07-25T13:41:00.080Z"
+      "last_hit": "2026-07-25T14:08:43.978Z"
     },
     "/api/forge/loop": {
-      "hits": 6,
+      "hits": 8,
       "first_hit": "2026-07-25T07:36:41.299Z",
-      "last_hit": "2026-07-25T13:37:08.459Z"
+      "last_hit": "2026-07-25T14:08:43.974Z"
     },
     "/api/knowledge/preview": {
-      "hits": 11,
+      "hits": 13,
       "first_hit": "2026-07-25T07:36:41.305Z",
-      "last_hit": "2026-07-25T13:37:08.505Z"
+      "last_hit": "2026-07-25T14:08:44.058Z"
     },
     "/api/endpoints": {
-      "hits": 2,
+      "hits": 4,
       "first_hit": "2026-07-25T07:45:31.698Z",
-      "last_hit": "2026-07-25T13:16:21.771Z"
+      "last_hit": "2026-07-25T14:02:52.332Z"
     },
     "/api/autopilot": {
-      "hits": 89,
+      "hits": 181,
       "first_hit": "2026-07-25T13:02:06.583Z",
-      "last_hit": "2026-07-25T13:41:08.921Z"
+      "last_hit": "2026-07-25T14:23:41.030Z"
     },
     "/api/forge/knowledge": {
-      "hits": 6,
+      "hits": 8,
       "first_hit": "2026-07-25T13:03:36.044Z",
-      "last_hit": "2026-07-25T13:41:00.142Z"
+      "last_hit": "2026-07-25T14:08:44.081Z"
     },
     "/api/autopilot/stop": {
       "hits": 1,
@@ -117,9 +117,79 @@
       "last_hit": "2026-07-25T13:30:04.606Z"
     },
     "/api/limits/events": {
-      "hits": 5,
+      "hits": 7,
       "first_hit": "2026-07-25T13:30:04.611Z",
-      "last_hit": "2026-07-25T13:37:11.963Z"
+      "last_hit": "2026-07-25T14:02:52.355Z"
+    },
+    "/api/introspect/preview": {
+      "hits": 5,
+      "first_hit": "2026-07-25T13:50:13.589Z",
+      "last_hit": "2026-07-25T14:02:52.360Z"
+    },
+    "/api/self/runtime": {
+      "hits": 7,
+      "first_hit": "2026-07-25T13:50:13.785Z",
+      "last_hit": "2026-07-25T14:02:52.357Z"
+    },
+    "/api/forge/bundle": {
+      "hits": 8,
+      "first_hit": "2026-07-25T13:54:28.954Z",
+      "last_hit": "2026-07-25T14:02:52.383Z"
+    },
+    "/api/judge": {
+      "hits": 7,
+      "first_hit": "2026-07-25T14:01:17.054Z",
+      "last_hit": "2026-07-25T14:16:27.144Z"
+    },
+    "/api/forge/blind/simulate": {
+      "hits": 2,
+      "first_hit": "2026-07-25T14:02:52.146Z",
+      "last_hit": "2026-07-25T14:02:52.166Z"
+    },
+    "/api/evolution/attempted": {
+      "hits": 1,
+      "first_hit": "2026-07-25T14:02:52.277Z",
+      "last_hit": "2026-07-25T14:02:52.277Z"
+    },
+    "/api/scout/candidates": {
+      "hits": 1,
+      "first_hit": "2026-07-25T14:02:52.311Z",
+      "last_hit": "2026-07-25T14:02:52.311Z"
+    },
+    "/api/scout/gaps": {
+      "hits": 1,
+      "first_hit": "2026-07-25T14:02:52.314Z",
+      "last_hit": "2026-07-25T14:02:52.314Z"
+    },
+    "/api/knowledge/archive": {
+      "hits": 1,
+      "first_hit": "2026-07-25T14:02:52.340Z",
+      "last_hit": "2026-07-25T14:02:52.340Z"
+    },
+    "/api/restart/status": {
+      "hits": 10,
+      "first_hit": "2026-07-25T14:05:51.705Z",
+      "last_hit": "2026-07-25T14:16:27.173Z"
+    },
+    "/api/restart": {
+      "hits": 1,
+      "first_hit": "2026-07-25T14:05:51.848Z",
+      "last_hit": "2026-07-25T14:05:51.848Z"
+    },
+    "/api/forge/population": {
+      "hits": 3,
+      "first_hit": "2026-07-25T14:14:00.913Z",
+      "last_hit": "2026-07-25T14:16:27.186Z"
+    },
+    "/api/forge/population/simulate": {
+      "hits": 4,
+      "first_hit": "2026-07-25T14:14:01.015Z",
+      "last_hit": "2026-07-25T14:16:24.989Z"
+    },
+    "/api/forge/population/dryrun": {
+      "hits": 2,
+      "first_hit": "2026-07-25T14:15:09.346Z",
+      "last_hit": "2026-07-25T14:16:25.080Z"
     }
   }
 }

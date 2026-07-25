@@ -601,18 +601,33 @@
 
   .limit-row.dormant { opacity: 0.62; border-left-color: var(--ink-faint); }
 
+  /* ---- Layer 11-15 · the closed forge loop, at a glance ---- */
+  .closure-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.6rem; margin-bottom: 1.1rem;
+  }
+  .closure-cell {
+    border: 1px solid var(--line); border-left-width: 2px; border-radius: 8px;
+    padding: 0.6rem 0.75rem; background: var(--ground); font-size: 0.82rem;
+  }
+  .closure-cell.ok { border-left-color: var(--ok); }
+  .closure-cell.warn { border-left-color: var(--amber); }
+  .closure-cell .lab { font-size: 0.7rem; color: var(--amber); letter-spacing: 0.04em; }
+  .closure-cell .val { font-weight: 700; margin-top: 0.15rem; }
+  .closure-cell .sub { color: var(--ink-faint); font-size: 0.75rem; margin-top: 0.2rem; line-height: 1.5; }
+
   footer { border-top: 1px solid var(--line); text-align: center; padding: 1.6rem; color: var(--ink-faint); font-size: 0.8rem; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="mono">Connecting the Dots · At Scale · Self-Forging v5 · The Scout · The Distiller · The Self-Connector · The Ignition · The RemLedger · Opus 5</div>
+  <div class="mono">Connecting the Dots · At Scale · Self-Forging v6 · The Ignition · The RemLedger · The Behavioural Mirror · The External Judge · A Population &gt; 1 · Opus 5</div>
   <h1>🔗 The Dot-Connector AI</h1>
   <p>เก็บ "จุดความรู้" จากต่างสาขา → AI ลากเส้นเชื่อมข้ามโดเมน → พิสูจน์ความใหม่กับโลกจริงด้วยการค้นเว็บ → ได้ต้นแบบที่รันได้จริง<br><b style="color:var(--amber)">และเมื่อเจอเพดานของตัวเอง มันเขียนโค้ดของตัวเองใหม่เพื่อทำลายเพดานนั้น</b></p>
   <details class="changelog">
-    <summary>อ่านว่าแต่ละชั้นใหม่ทำอะไรได้บ้าง (Layer 06.8 · 06.9 · 07 · 08 · 09 · 10)</summary>
-    <p><span style="color:var(--ok)">🔑 ใหม่ (Layer 09 · The Ignition): เครื่องยนต์มีสวิตช์กุญแจแล้ว — ค่าตั้งต้นคือ<b>หยุด</b> ไม่มีอะไรทำงานตามนาฬิกาจนกว่าคุณจะกดเปิด และ Self-Forge ต้องติดอาวุธแยกอีกชั้นเสมอ · ทุกปุ่มยังกดได้ตอนเครื่องยนต์หยุด สิ่งที่ปิดคือนาฬิกา ไม่ใช่ความสามารถ · มีปุ่มหยุดฉุกเฉินที่ฆ่างาน AI ที่ค้างอยู่ได้จริง แม้แต่รอบหลอมตัวเองกลางคัน</span><br><span style="color:var(--dot-b)">🧲 ใหม่ (Layer 10 · The RemLedger — <b>ชั้นนี้ระบบออกแบบเอง</b>): เดิมทุกครั้งที่มันส่องกระจก ทะเบียนกำแพงถูกเขียนทับทั้งไฟล์ — ข้อที่ยังจริงอยู่แต่ไม่ถูกเอ่ยถึงหายไปพร้อมประวัติความล้มเหลว และกำแพงเดิมที่ได้ id ใหม่กลายเป็นกำแพงที่ "ไม่เคยล้มเหลว" · ตอนนี้ความเงียบไม่ใช่การลบ (remanence) ต้องเงียบครบ 3 รอบถึงจะหลับ และหลับ ≠ หาย · กำแพงถูกจับคู่จากลายเซ็นเชิงโครงสร้าง ไม่ใช่จากฉลากที่ออกใหม่ทุกครั้ง</span><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--amber)">📈 ใหม่ (Layer 06.8): มันเลิกตัดสินตัวเองแค่ที่วินาทีที่โค้ดเขียนเสร็จ — ทุกรอบขยายต้องประกาศ "เส้นทางที่ความสามารถนี้จะถูกใช้ผ่าน" แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะให้คะแนนรอบนั้นด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ · รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลง</span><br><span style="color:var(--dot-a)">🧠 ใหม่ (Layer 06.9): เครื่องมือเชื่อมจุดเลิกลืมจุดของตัวเองตอนเขียนโค้ดตัวเอง — รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน · คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่าช่วยทำลายกำแพงได้จริงหรือไม่</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
+    <summary>อ่านว่าแต่ละชั้นใหม่ทำอะไรได้บ้าง (Layer 06.8 · 06.9 · 07 · 08 · 09 · 10 · 11–15)</summary>
+    <p><span style="color:var(--amber)">🧬 ใหม่ (Layer 11–15): วงจรการหลอมตัวเองถูกปิดครบทั้งห้าจุด — กระจกเห็น<b>พฤติกรรมจริง</b>ของตัวเอง ไม่ใช่แค่ซอร์ส · การอ่านตัวเองมี<b>เพดานคงที่</b> (15 KB แทน 570 KB) จึงไม่แพงขึ้นทุกครั้งที่มันเก่งขึ้น · หนึ่งรอบส่ง<b>หลายผู้สมัคร</b>ลงแข่งในสำเนาทรีคนละชุด แล้วรับคนเดียว · <b>ผู้ตัดสินถูกแช่แข็งไว้นอกไฟล์ที่มันแก้ได้</b> และผู้ออกข้อสอบไม่เห็น diff · และเมื่อรอบผ่าน มัน<b>กลายเป็นโค้ดใหม่นั้นทันที</b> โดยมีสุนัขเฝ้าบ้านนอกโปรเซสคอยกู้กลับถ้าพลาด</span><br><span style="color:var(--ok)">🔑 ใหม่ (Layer 09 · The Ignition): เครื่องยนต์มีสวิตช์กุญแจแล้ว — ค่าตั้งต้นคือ<b>หยุด</b> ไม่มีอะไรทำงานตามนาฬิกาจนกว่าคุณจะกดเปิด และ Self-Forge ต้องติดอาวุธแยกอีกชั้นเสมอ · ทุกปุ่มยังกดได้ตอนเครื่องยนต์หยุด สิ่งที่ปิดคือนาฬิกา ไม่ใช่ความสามารถ · มีปุ่มหยุดฉุกเฉินที่ฆ่างาน AI ที่ค้างอยู่ได้จริง แม้แต่รอบหลอมตัวเองกลางคัน</span><br><span style="color:var(--dot-b)">🧲 ใหม่ (Layer 10 · The RemLedger — <b>ชั้นนี้ระบบออกแบบเอง</b>): เดิมทุกครั้งที่มันส่องกระจก ทะเบียนกำแพงถูกเขียนทับทั้งไฟล์ — ข้อที่ยังจริงอยู่แต่ไม่ถูกเอ่ยถึงหายไปพร้อมประวัติความล้มเหลว และกำแพงเดิมที่ได้ id ใหม่กลายเป็นกำแพงที่ "ไม่เคยล้มเหลว" · ตอนนี้ความเงียบไม่ใช่การลบ (remanence) ต้องเงียบครบ 3 รอบถึงจะหลับ และหลับ ≠ หาย · กำแพงถูกจับคู่จากลายเซ็นเชิงโครงสร้าง ไม่ใช่จากฉลากที่ออกใหม่ทุกครั้ง</span><br><span style="color:var(--dot-a)">🧹 ใหม่: มันเดินได้สองทิศแล้ว — นอกจากรอบที่ทำให้ตัวเองเก่งขึ้น ยังมี "รอบยุบรวม" ที่ทำให้ตัวเองเล็กลงโดยพิสูจน์ด้วยชุดทดสอบเดิมที่ต้องผ่านทั้งก่อนและหลัง</span><br><span style="color:var(--dot-b)">🔭 คลังไม่รอคุณป้อนอีกต่อไป — ความรู้ที่มันเคยค้นเจอแล้วทิ้ง กลายเป็นจุดที่ใช้ได้ และมันออกไปหาความรู้ใหม่มาเองเมื่อเจอโดเมนที่คลังยังว่าง (คุณกดปฏิเสธได้ทุกจุด)</span><br><span style="color:var(--amber)">📈 ใหม่ (Layer 06.8): มันเลิกตัดสินตัวเองแค่ที่วินาทีที่โค้ดเขียนเสร็จ — ทุกรอบขยายต้องประกาศ "เส้นทางที่ความสามารถนี้จะถูกใช้ผ่าน" แล้วอีกไม่กี่วันบันทึกการใช้งานจริงจะให้คะแนนรอบนั้นด้วยสูตรเดียวกับที่ให้คะแนนไอเดียของคุณ · รอบที่ไม่มีใครเรียกเลยถูกเสนอเป็นเป้าหมายของรอบยุบรวมเอง และหมวดของกำแพงที่เคยผลิตของที่ไม่มีใครใช้จะถูกลดลำดับลง</span><br><span style="color:var(--dot-a)">🧠 ใหม่ (Layer 06.9): เครื่องมือเชื่อมจุดเลิกลืมจุดของตัวเองตอนเขียนโค้ดตัวเอง — รอบหลอมตัวเองได้อ่านหลักการจริงจากคลัง (มีเพดาน จึงไม่โตตามคลัง) ได้เห็นรอบเชื่อมจุดที่เล็งกำแพงนั้นโดยเฉพาะ แล้วต้องประกาศว่าใช้หลักการจากจุดไหน · คำประกาศนั้นถูกให้คะแนนด้วยผลของด่านทั้งหมด คลังความรู้จึงเริ่มถูกพิสูจน์ได้ว่าช่วยทำลายกำแพงได้จริงหรือไม่</span><br><span style="color:var(--dot-b)">⚗ ใหม่ (Layer 08): คลังเลิกโตทางเดียว — มันรวบจุดที่ซ้ำซ้อนเป็นหลักการเดียวได้เอง โดยผ่านก็ต่อเมื่อการเชื่อมที่เคยได้ผลจริงยังอธิบายได้ จุดที่พิสูจน์แล้วไม่หาย และพรอมป์ตสั้นลงจริง · จุดเดิมถูกเก็บไว้ทั้งดวงและย้อนกลับได้</span></p>
   </details>
   <!-- Layer 09 · The Ignition: nothing on a clock runs until this is switched on -->
   <div id="ignition" class="off">
@@ -741,6 +756,9 @@
     </div>
 
     <div class="forge-bar" id="forgeBar">กำลังอ่านตัวเอง…</div>
+
+    <!-- Layer 11-15: the four facts that decide whether a round is worth trusting -->
+    <div class="closure-grid" id="closureGrid"></div>
 
     <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.2rem">
       <button class="btn small ghost" id="introspectBtn" onclick="introspect(this)">🔬 วิเคราะห์ขอบเขตตัวเอง</button>
@@ -1691,6 +1709,57 @@ const CAT_LABEL = {
   knowledge: "ความรู้", interface: "การมองเห็น", physics: "ข้อจำกัดทางกายภาพ",
 };
 
+/* ---- Layer 11-15: the four questions that decide whether a round can be trusted ---- */
+async function loadClosure() {
+  const box = document.getElementById("closureGrid");
+  if (!box) return;
+  const grab = (u) => getJson(u).catch(() => null);
+  const [rt, judge, restart, pop] = await Promise.all([
+    grab("/api/self/runtime"), grab("/api/judge"), grab("/api/restart/status"), grab("/api/forge/population"),
+  ]);
+  const cell = (ok, lab, val, sub) =>
+    `<div class="closure-cell ${ok ? "ok" : "warn"}"><div class="lab">${lab}</div><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
+  const cells = [];
+  if (rt) {
+    const crash = (rt.log.kinds.find(k => k.key === "crash") || {}).count || 0;
+    cells.push(cell(
+      crash === 0,
+      "LAYER 11 · กระจกเห็นพฤติกรรมจริง",
+      `${rt.rounds.total} รอบใน ${rt.window_days} วัน · ผ่าน ${rt.rounds.accepted}`,
+      `ข้อผิดพลาดที่ถูกดัก ${crash} · เส้นทางที่ไม่มีใครเรียก ${rt.usage.never_called_capabilities.length} · คำขอทั้งหมด ${rt.usage.total_requests}`
+    ));
+  }
+  if (judge) {
+    cells.push(cell(
+      judge.honours_contract && judge.guarded && judge.audit.auditor_present,
+      "LAYER 13 · ผู้ตัดสินนอกห้องสอบ",
+      judge.honours_contract ? `สัญญาครบ ${judge.floor} เส้น` : `⚠ หลุดไป ${judge.dropped_from_source.length} เส้น`,
+      `แช่แข็ง ${judge.frozen_at || "—"} · ผู้ตรวจอิสระรันทุกรอบกับไฟล์พิสูจน์ ${judge.audit.proofs_on_disk} ไฟล์ · ผู้ออกข้อสอบไม่เห็น diff`
+    ));
+  }
+  if (restart) {
+    const last = (restart.history || [])[0];
+    cells.push(cell(
+      restart.running_is_disk,
+      "LAYER 14 · ตัวที่คิด = ตัวที่เป็น",
+      restart.running_is_disk ? "ตรงกับโค้ดบนดิสก์" : "⚠ มีโค้ดใหม่ที่ยังไม่ได้โหลด",
+      `รีสตาร์ตเองอัตโนมัติ: ${restart.auto_restart.armed ? "ติดอาวุธ" : "ปิด (" + esc(restart.auto_restart.reason || "") + ")"}` +
+      (last ? ` · ครั้งล่าสุด ${esc(last.outcome)}${last.took_ms ? " ใน " + (last.took_ms / 1000).toFixed(1) + " วิ" : ""}` : " · ยังไม่เคยรีสตาร์ตเอง")
+    ));
+  }
+  if (pop) {
+    cells.push(cell(
+      pop.enabled,
+      "LAYER 15 · ประชากรต่อรอบ",
+      `${pop.k} ผู้สมัคร/รอบ`,
+      pop.enabled
+        ? `แต่ละคนถูกบังคับให้เดินคนละแนวทาง แข่งในสำเนาทรีของตัวเอง แล้วรับคนเดียว · ผู้แพ้กลายเป็นแผลเป็นทั้งหมด`
+        : "ตั้ง FORGE_POPULATION=2 ขึ้นไปเพื่อให้หนึ่งรอบมีหลายสายเลือด"
+    ));
+  }
+  box.innerHTML = cells.join("") || "";
+}
+
 async function loadForge() {
   const [self, limits, evo, loop, adoption] = await Promise.all([
     getJson("/api/self"),
@@ -2608,6 +2677,7 @@ async function restartEngine(btn) {
 }
 
 loadIgnition();
+loadClosure();
 // Keep the ignition honest: the page must not still say "idle" while a round it did not
 // start is running, or "running" for twenty minutes after one finished.
 setInterval(loadIgnition, 20000);
