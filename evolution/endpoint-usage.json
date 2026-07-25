@@ -2,9 +2,9 @@
   "started_at": "2026-07-25T05:10:35.081Z",
   "endpoints": {
     "/api/self": {
-      "hits": 33,
+      "hits": 34,
       "first_hit": "2026-07-25T05:10:46.317Z",
-      "last_hit": "2026-07-25T15:33:31.153Z"
+      "last_hit": "2026-07-25T19:18:23.125Z"
     },
     "/api/transcend": {
       "hits": 8,
@@ -192,14 +192,19 @@
       "last_hit": "2026-07-25T14:16:25.080Z"
     },
     "/api/connect": {
-      "hits": 4,
+      "hits": 10,
       "first_hit": "2026-07-25T17:54:31.401Z",
-      "last_hit": "2026-07-25T18:10:16.767Z"
+      "last_hit": "2026-07-25T19:37:55.837Z"
     },
     "/api/evidence": {
       "hits": 4,
       "first_hit": "2026-07-25T18:13:16.135Z",
       "last_hit": "2026-07-25T18:42:26.594Z"
+    },
+    "/api/outcome": {
+      "hits": 6,
+      "first_hit": "2026-07-25T19:26:00.412Z",
+      "last_hit": "2026-07-25T19:40:15.116Z"
     }
   }
 }
