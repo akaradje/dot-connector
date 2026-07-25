@@ -3966,8 +3966,12 @@ const FORGE_FOCUS_LINES = Math.max(20, Number(process.env.FORGE_FOCUS_LINES || 1
 // file rather than the bundle growing without end.
 const FORGE_BUNDLE_CHARS = Math.max(6000, Number(process.env.FORGE_BUNDLE_CHARS || 46000));
 
-// The identifiers a wall names. These are what the round is going to have to read anyway.
-function focusTargets(limit) {
+/* The identifiers a wall names. These are what the round is going to have to read anyway.
+ * `body` matters: a wall that writes "promptBundle ยัดซอร์สทั้งไฟล์" without brackets names a
+ * real function just as clearly as one that writes "promptBundle()". Matching the prose
+ * against the symbols that actually exist in the tree catches both, and cannot invent a
+ * target that is not there. */
+function focusTargets(limit, body = null) {
   const text = [limit && limit.evidence, limit && limit.description, limit && limit.break_idea, limit && limit.title]
     .filter(Boolean)
     .join(" ");
@@ -3977,6 +3981,12 @@ function focusTargets(limit) {
   for (const m of text.matchAll(/\b([A-Z][A-Z0-9_]{3,})\b/g)) symbols.add(m[1]);
   for (const m of text.matchAll(/\b([A-Za-z0-9_./-]+\.(?:js|html|json|md))\b/g)) files.add(m[1].replace(/^\.\//, ""));
   for (const m of text.matchAll(/(\/api\/[A-Za-z0-9/_-]+)/g)) symbols.add("route " + m[1]);
+  if (body) {
+    const words = new Set(String(text).match(/[A-Za-z_$][A-Za-z0-9_$]{3,}/g) || []);
+    for (const content of Object.values(body)) {
+      for (const r of symbolRanges(content)) if (words.has(r.name)) symbols.add(r.name);
+    }
+  }
   return { symbols: [...symbols], files: [...files] };
 }
 
@@ -4002,7 +4012,7 @@ function symbolRanges(content) {
  * the budget is still exceeded — the map itself compressed to one line per file. Returns the
  * text plus the numbers behind it, so the cost of reading itself is reportable. */
 function focusedBundle(body, limit = null, { focusChars = FORGE_FOCUS_CHARS, totalChars = FORGE_BUNDLE_CHARS } = {}) {
-  const want = focusTargets(limit || {});
+  const want = focusTargets(limit || {}, body);
   const excerpts = [];
   let focusUsed = 0;
   if (want.symbols.length || want.files.length) {
