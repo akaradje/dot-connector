@@ -2,9 +2,9 @@
   "started_at": "2026-07-25T05:10:35.081Z",
   "endpoints": {
     "/api/self": {
-      "hits": 35,
+      "hits": 37,
       "first_hit": "2026-07-25T05:10:46.317Z",
-      "last_hit": "2026-07-26T16:51:41.200Z"
+      "last_hit": "2026-07-27T12:06:23.134Z"
     },
     "/api/transcend": {
       "hits": 8,
@@ -12,49 +12,49 @@
       "last_hit": "2026-07-25T07:29:41.639Z"
     },
     "/api/dots": {
-      "hits": 58,
+      "hits": 60,
       "first_hit": "2026-07-25T05:13:22.590Z",
-      "last_hit": "2026-07-25T17:54:04.873Z"
+      "last_hit": "2026-07-27T12:06:23.296Z"
     },
     "/api/connections": {
-      "hits": 15,
+      "hits": 16,
       "first_hit": "2026-07-25T05:13:22.599Z",
-      "last_hit": "2026-07-25T18:51:00.160Z"
+      "last_hit": "2026-07-27T12:06:23.312Z"
     },
     "/api/lessons": {
-      "hits": 11,
+      "hits": 12,
       "first_hit": "2026-07-25T05:13:22.604Z",
-      "last_hit": "2026-07-25T15:33:31.150Z"
+      "last_hit": "2026-07-27T12:06:23.111Z"
     },
     "/api/limits": {
-      "hits": 26,
+      "hits": 27,
       "first_hit": "2026-07-25T05:13:23.045Z",
-      "last_hit": "2026-07-25T15:33:31.234Z"
+      "last_hit": "2026-07-27T12:06:23.282Z"
     },
     "/api/forgotten": {
-      "hits": 51,
+      "hits": 52,
       "first_hit": "2026-07-25T05:13:23.057Z",
-      "last_hit": "2026-07-25T15:33:31.263Z"
+      "last_hit": "2026-07-27T12:06:23.355Z"
     },
     "/api/scout/status": {
-      "hits": 48,
+      "hits": 49,
       "first_hit": "2026-07-25T05:13:23.060Z",
-      "last_hit": "2026-07-25T15:33:31.248Z"
+      "last_hit": "2026-07-27T12:06:23.421Z"
     },
     "/api/evolution": {
-      "hits": 16,
+      "hits": 17,
       "first_hit": "2026-07-25T05:13:23.128Z",
-      "last_hit": "2026-07-25T15:33:31.243Z"
+      "last_hit": "2026-07-27T12:06:23.330Z"
     },
     "/api/serendipity/status": {
-      "hits": 54,
+      "hits": 55,
       "first_hit": "2026-07-25T05:13:23.130Z",
-      "last_hit": "2026-07-25T15:33:31.269Z"
+      "last_hit": "2026-07-27T12:06:23.417Z"
     },
     "/api/consolidation/preview": {
-      "hits": 16,
+      "hits": 17,
       "first_hit": "2026-07-25T05:13:23.361Z",
-      "last_hit": "2026-07-25T15:33:31.322Z"
+      "last_hit": "2026-07-27T12:06:23.524Z"
     },
     "/api/forge/preview": {
       "hits": 6,
@@ -72,19 +72,19 @@
       "last_hit": "2026-07-25T14:21:26.637Z"
     },
     "/api/adoption": {
-      "hits": 12,
+      "hits": 13,
       "first_hit": "2026-07-25T07:36:41.248Z",
-      "last_hit": "2026-07-25T15:33:31.256Z"
+      "last_hit": "2026-07-27T12:06:23.346Z"
     },
     "/api/forge/loop": {
-      "hits": 10,
+      "hits": 11,
       "first_hit": "2026-07-25T07:36:41.299Z",
-      "last_hit": "2026-07-25T15:33:31.253Z"
+      "last_hit": "2026-07-27T12:06:23.340Z"
     },
     "/api/knowledge/preview": {
-      "hits": 15,
+      "hits": 16,
       "first_hit": "2026-07-25T07:36:41.305Z",
-      "last_hit": "2026-07-25T15:33:31.270Z"
+      "last_hit": "2026-07-27T12:06:23.457Z"
     },
     "/api/endpoints": {
       "hits": 4,
@@ -92,14 +92,14 @@
       "last_hit": "2026-07-25T14:02:52.332Z"
     },
     "/api/autopilot": {
-      "hits": 419,
+      "hits": 2368,
       "first_hit": "2026-07-25T13:02:06.583Z",
-      "last_hit": "2026-07-25T17:23:36.508Z"
+      "last_hit": "2026-07-28T16:57:14.185Z"
     },
     "/api/forge/knowledge": {
-      "hits": 10,
+      "hits": 11,
       "first_hit": "2026-07-25T13:03:36.044Z",
-      "last_hit": "2026-07-25T15:33:31.293Z"
+      "last_hit": "2026-07-27T12:06:23.480Z"
     },
     "/api/autopilot/stop": {
       "hits": 1,
@@ -127,9 +127,9 @@
       "last_hit": "2026-07-25T14:02:52.360Z"
     },
     "/api/self/runtime": {
-      "hits": 9,
+      "hits": 10,
       "first_hit": "2026-07-25T13:50:13.785Z",
-      "last_hit": "2026-07-25T15:33:31.100Z"
+      "last_hit": "2026-07-27T12:06:23.020Z"
     },
     "/api/forge/bundle": {
       "hits": 9,
@@ -137,9 +137,9 @@
       "last_hit": "2026-07-25T14:29:47.898Z"
     },
     "/api/judge": {
-      "hits": 9,
+      "hits": 10,
       "first_hit": "2026-07-25T14:01:17.054Z",
-      "last_hit": "2026-07-25T15:33:31.112Z"
+      "last_hit": "2026-07-27T12:06:23.048Z"
     },
     "/api/forge/blind/simulate": {
       "hits": 2,
@@ -167,9 +167,9 @@
       "last_hit": "2026-07-25T14:02:52.340Z"
     },
     "/api/restart/status": {
-      "hits": 12,
+      "hits": 13,
       "first_hit": "2026-07-25T14:05:51.705Z",
-      "last_hit": "2026-07-25T15:33:31.129Z"
+      "last_hit": "2026-07-27T12:06:23.103Z"
     },
     "/api/restart": {
       "hits": 1,
@@ -177,9 +177,9 @@
       "last_hit": "2026-07-25T14:05:51.848Z"
     },
     "/api/forge/population": {
-      "hits": 5,
+      "hits": 6,
       "first_hit": "2026-07-25T14:14:00.913Z",
-      "last_hit": "2026-07-25T15:33:31.132Z"
+      "last_hit": "2026-07-27T12:06:23.128Z"
     },
     "/api/forge/population/simulate": {
       "hits": 4,
@@ -192,9 +192,9 @@
       "last_hit": "2026-07-25T14:16:25.080Z"
     },
     "/api/connect": {
-      "hits": 20,
+      "hits": 21,
       "first_hit": "2026-07-25T17:54:31.401Z",
-      "last_hit": "2026-07-26T17:59:27.591Z"
+      "last_hit": "2026-07-27T12:03:12.415Z"
     },
     "/api/evidence": {
       "hits": 4,
